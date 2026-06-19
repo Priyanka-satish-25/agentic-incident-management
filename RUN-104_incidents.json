@@ -1,0 +1,43 @@
+{
+  "run_id": "RUN-104",
+  "generated_at": "2026-06-16T03:11:17.971345+00:00",
+  "total_incidents": 2,
+  "incidents": [
+    {
+      "ticket_id": "INC-2045",
+      "run_id": "RUN-104",
+      "step_id": "STEP-004",
+      "sequence_position": 4,
+      "section": "5. Z-axis Assembly",
+      "sop_step": "Torque all Z-axis frame bolts to 2.5 Nm using a calibrated torque wrench.",
+      "verdict": "Deviation",
+      "timestamp": "00:02:20",
+      "confidence": 94,
+      "severity": "high",
+      "severity_reason": "Improper torque application may lead to functional failure or structural instability of the Z-axis frame.",
+      "incident_summary": "At 00:02:20, the worker deviated from the SOP by using a standard hex wrench instead of a calibrated torque wrench to tighten Z-axis frame bolts. This deviation prevents verification of the required 2.5 Nm torque, which is critical for structural integrity.",
+      "recommended_action": "QA manager should review the affected assembly and re-torque all Z-axis frame bolts using a calibrated torque wrench.",
+      "status": "Open",
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-16T03:11:16.347620+00:00"
+    },
+    {
+      "ticket_id": "INC-2046",
+      "run_id": "RUN-104",
+      "step_id": "STEP-007",
+      "sequence_position": 7,
+      "section": "5. Z-axis Assembly",
+      "sop_step": "Run the Z-axis self-calibration routine for a minimum of 90 seconds before sign-off.",
+      "verdict": "Deviation",
+      "timestamp": "00:04:55",
+      "confidence": 97,
+      "severity": "high",
+      "severity_reason": "The incomplete calibration routine could lead to functional failure of the equipment or product if not corrected.",
+      "incident_summary": "The worker terminated the Z-axis self-calibration routine after only 34 seconds instead of the required 90 seconds. This deviation could result in improper calibration, potentially affecting the accuracy and functionality of the equipment.",
+      "recommended_action": "The QA manager should review the incident and determine if recalibration or additional corrective actions are necessary.",
+      "status": "Open",
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-16T03:11:17.971290+00:00"
+    }
+  ]
+}

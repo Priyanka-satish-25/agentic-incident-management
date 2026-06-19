@@ -1,0 +1,22 @@
+# Secrets — never commit these
+.env
+**/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+
+# Streamlit
+.streamlit/
+
+# Node
+node_modules/
+
+# macOS
+.DS_Store
+
+# Ticket database (local state, not for version control)
+tickets_db.json

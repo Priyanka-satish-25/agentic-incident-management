@@ -1,0 +1,33 @@
+{
+  "run_id": "RUN-102",
+  "generated_at": "2026-06-15T03:41:45.352104+00:00",
+  "total_steps": 2,
+  "checklist": [
+    {
+      "step_id": "STEP-001",
+      "sequence_position": 1,
+      "section": "4. E-axis Assembly",
+      "description": "Place the extruder body on a flat surface.",
+      "check_type": "presence",
+      "compliance_criterion": "Worker places extruder body on flat surface with front face visibly pointing upward.",
+      "expected_duration_seconds": null,
+      "figure_refs": [
+        "fig_4_1"
+      ],
+      "severity": "medium",
+      "verifiability_notes": "Verifiable with top-down camera."
+    },
+    {
+      "step_id": "STEP-005",
+      "sequence_position": 5,
+      "section": "4. E-axis Assembly",
+      "description": "Allow lubricant to settle for 60 seconds.",
+      "check_type": "duration",
+      "compliance_criterion": "Worker pauses all activity for a minimum of 60 seconds after lubricant application.",
+      "expected_duration_seconds": 60,
+      "figure_refs": [],
+      "severity": "high",
+      "verifiability_notes": "Validated deterministically by the Timing Engine from timestamps."
+    }
+  ]
+}

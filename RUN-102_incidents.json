@@ -1,0 +1,61 @@
+{
+  "run_id": "RUN-102",
+  "generated_at": "2026-06-15T04:36:26.445986+00:00",
+  "total_incidents": 3,
+  "incidents": [
+    {
+      "ticket_id": "INC-2045",
+      "run_id": "RUN-102",
+      "step_id": "STEP-002",
+      "sequence_position": 2,
+      "section": "4. E-axis Assembly",
+      "sop_step": "Insert the Bondtech drive gear onto the motor shaft, ensuring the set screw aligns with the flat side of the shaft.",
+      "verdict": "Deviation",
+      "timestamp": "00:00:48",
+      "confidence": 91,
+      "severity": "high",
+      "severity_reason": "The misalignment of the set screw with the flat face of the shaft can lead to functional failure of the drive gear during operation.",
+      "incident_summary": "At timestamp 00:00:48, the worker inserted the Bondtech drive gear onto the motor shaft but failed to align the set screw with the flat face of the shaft, leaving it rotated approximately 90 degrees. This misalignment could result in slippage or improper functioning of the drive gear, potentially compromising the equipment's performance.",
+      "recommended_action": "The QA manager should review the incident and ensure the drive gear is reinstalled correctly before proceeding with production.",
+      "status": "Open",
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-15T04:36:21.791585+00:00"
+    },
+    {
+      "ticket_id": "INC-2046",
+      "run_id": "RUN-102",
+      "step_id": "STEP-004",
+      "sequence_position": 4,
+      "section": "4. E-axis Assembly",
+      "sop_step": "Apply a small amount of lubricant to the lead screw threads.",
+      "verdict": "Deviation",
+      "timestamp": "00:01:30",
+      "confidence": 96,
+      "severity": "high",
+      "severity_reason": "Skipping lubrication can lead to functional failure of the lead screw due to increased friction and wear.",
+      "incident_summary": "The worker skipped the step of applying lubricant to the lead screw threads, proceeding directly from step 3 to step 5. This omission could result in increased friction, wear, and potential failure of the lead screw, impacting the functionality of the equipment.",
+      "recommended_action": "The QA manager should review the incident and inspect the affected equipment for potential damage or operational risks.",
+      "status": "Open",
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-15T04:36:24.192236+00:00"
+    },
+    {
+      "ticket_id": "INC-2047",
+      "run_id": "RUN-102",
+      "step_id": "STEP-005",
+      "sequence_position": 5,
+      "section": "4. E-axis Assembly",
+      "sop_step": "Allow the lubricant to settle on the lead screw for at least 60 seconds.",
+      "verdict": "Deviation",
+      "timestamp": "00:01:38",
+      "confidence": 98,
+      "severity": "high",
+      "severity_reason": "Skipping lubricant application and not allowing sufficient settling time can lead to functional failure of the lead screw.",
+      "incident_summary": "The worker failed to apply lubricant to the lead screw as required by STEP-004 and resumed activity after only 8 seconds instead of the mandated 60 seconds. This deviation risks improper lubrication, which could cause mechanical wear or failure.",
+      "recommended_action": "Immediately review the incident with the QA manager and inspect the affected equipment for potential damage or wear.",
+      "status": "Open",
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-15T04:36:26.445817+00:00"
+    }
+  ]
+}

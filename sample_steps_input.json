@@ -1,0 +1,88 @@
+{
+  "run_id": "RUN-102",
+  "sop_source": "prusa_mk3s_assembly_chapter4.pdf",
+  "extracted_at": "2026-06-15T03:45:00Z",
+  "total_steps": 8,
+  "steps": [
+    {
+      "step_id": "STEP-001",
+      "sequence_position": 1,
+      "section": "4. E-axis Assembly",
+      "description": "Place the extruder body on a flat surface with the front face pointing upward.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": ["fig_4_1", "fig_4_2"],
+      "raw_text": "Place the extruder body on a flat surface with the front face pointing upward. See Fig. 4.1 and Fig. 4.2 for correct orientation."
+    },
+    {
+      "step_id": "STEP-002",
+      "sequence_position": 2,
+      "section": "4. E-axis Assembly",
+      "description": "Insert the Bondtech drive gear onto the motor shaft, ensuring the set screw aligns with the flat side of the shaft.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": ["fig_4_3"],
+      "raw_text": "Insert the Bondtech drive gear onto the motor shaft, ensuring the set screw aligns with the flat side of the shaft. See Fig. 4.3."
+    },
+    {
+      "step_id": "STEP-003",
+      "sequence_position": 3,
+      "section": "4. E-axis Assembly",
+      "description": "Tighten the set screw on the Bondtech drive gear using a 1.5mm hex key.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": [],
+      "raw_text": "Tighten the set screw on the Bondtech drive gear using a 1.5mm hex key. Do not overtighten."
+    },
+    {
+      "step_id": "STEP-004",
+      "sequence_position": 4,
+      "section": "4. E-axis Assembly",
+      "description": "Apply a small amount of lubricant to the lead screw threads.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": ["fig_4_5"],
+      "raw_text": "Apply a small amount of lubricant to the lead screw threads. See Fig. 4.5 for the correct application area."
+    },
+    {
+      "step_id": "STEP-005",
+      "sequence_position": 5,
+      "section": "4. E-axis Assembly",
+      "description": "Allow the lubricant to settle on the lead screw for at least 60 seconds before continuing.",
+      "check_type": "duration",
+      "expected_duration_seconds": 60,
+      "figure_refs": [],
+      "raw_text": "Allow the lubricant to settle on the lead screw for at least 60 seconds before continuing."
+    },
+    {
+      "step_id": "STEP-006",
+      "sequence_position": 6,
+      "section": "4. E-axis Assembly",
+      "description": "Thread the lead screw into the brass nut on the X-axis carriage from the bottom, rotating clockwise.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": ["fig_4_6", "fig_4_7"],
+      "raw_text": "Thread the lead screw into the brass nut on the X-axis carriage from the bottom, rotating clockwise. Refer to Fig. 4.6 and Fig. 4.7."
+    },
+    {
+      "step_id": "STEP-007",
+      "sequence_position": 7,
+      "section": "4. E-axis Assembly",
+      "description": "Mount the stepper motor to the extruder body using four M3x10 screws, tightening in a cross pattern.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": ["fig_4_8"],
+      "raw_text": "Mount the stepper motor to the extruder body using four M3x10 screws, tightening in a cross pattern. See Fig. 4.8."
+    },
+    {
+      "step_id": "STEP-008",
+      "sequence_position": 8,
+      "section": "4. E-axis Assembly",
+      "description": "Install the protective cap over the motor connector, pressing firmly until it clicks into place.",
+      "check_type": "presence",
+      "expected_duration_seconds": null,
+      "figure_refs": ["fig_4_9"],
+      "raw_text": "Install the protective cap over the motor connector, pressing firmly until it clicks into place. See Fig. 4.9."
+    }
+  ]
+}
