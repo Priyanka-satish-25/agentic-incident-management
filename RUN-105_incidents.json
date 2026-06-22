@@ -1,6 +1,6 @@
 {
   "run_id": "RUN-105",
-  "generated_at": "2026-06-16T03:11:27.340503+00:00",
+  "generated_at": "2026-06-22T03:40:55.960142+00:00",
   "total_incidents": 1,
   "incidents": [
     {
@@ -8,18 +8,18 @@
       "run_id": "RUN-105",
       "step_id": "STEP-008",
       "sequence_position": 8,
-      "section": "6. Final Inspection",
-      "sop_step": "Photograph the completed assembly from three angles and attach to the production record.",
+      "section": "7. Procedure B - rear-chassis upgrade",
+      "sop_step": "Confirm the reuse tray is empty; any remaining item indicates hardware missing from the vehicle.",
       "verdict": "Deviation",
-      "timestamp": "00:07:30",
-      "confidence": 82,
-      "severity": "medium",
-      "severity_reason": "The missing photographs could lead to quality verification challenges but do not immediately compromise safety or functionality.",
-      "incident_summary": "The worker skipped the SOP step of photographing the completed assembly from three specified angles before signing off and moving the unit to the dispatch area. This omission could hinder traceability and quality assurance processes.",
-      "recommended_action": "Notify the supervisor to review the incident and ensure the worker is retrained on the importance of this SOP step.",
+      "timestamp": "00:05:40",
+      "confidence": 81,
+      "severity": "high",
+      "severity_reason": "A missing wheel washer poses a functional failure risk if not corrected, impacting vehicle safety and performance.",
+      "incident_summary": "During the reinstallation process, a magenta washer was found remaining in the reuse tray, indicating that a wheel washer was not refitted to the vehicle. This deviation from the SOP could lead to significant functional issues, as the absence of this hardware compromises vehicle integrity and safety.",
+      "recommended_action": "The QA manager must review the incident and ensure the missing hardware is addressed before proceeding with production.",
       "status": "Open",
-      "assigned_to": "Supervisor",
-      "created_at": "2026-06-16T03:11:27.340389+00:00"
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-22T03:40:55.960028+00:00"
     }
   ]
 }
