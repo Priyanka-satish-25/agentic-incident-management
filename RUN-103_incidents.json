@@ -1,6 +1,6 @@
 {
   "run_id": "RUN-103",
-  "generated_at": "2026-06-22T03:40:45.470327+00:00",
+  "generated_at": "2026-06-22T05:46:09.722784+00:00",
   "total_incidents": 4,
   "incidents": [
     {
@@ -14,12 +14,12 @@
       "timestamp": "00:01:20",
       "confidence": 87,
       "severity": "high",
-      "severity_reason": "Functional failure is likely due to the use of an acorn nut instead of the required bracket screw, which could compromise the assembly's integrity.",
-      "incident_summary": "During production, a worker incorrectly installed an acorn nut instead of the specified threaded bracket screw, failing to perform the necessary hold-point confirmation. This deviation is critical as it bypasses a key quality check and could lead to functional failures in the final product.",
-      "recommended_action": "The QA manager must review the incident and assess the impact on production quality.",
+      "severity_reason": "Using an acorn nut instead of the specified threaded bracket screw can cause functional failure if not corrected, requiring QA manager review.",
+      "incident_summary": "The worker installed an acorn nut instead of the required threaded bracket screw, missing the hold point verification of the fastener head shape. This substitution is a known error mode that compromises the assembly's integrity and may lead to functional failure.",
+      "recommended_action": "Immediately inspect and replace the incorrect fastener, reinforce hold point verification procedures, and have the QA manager review the incident.",
       "status": "Open",
       "assigned_to": "QA Manager",
-      "created_at": "2026-06-22T03:40:38.022632+00:00"
+      "created_at": "2026-06-22T05:46:03.344468+00:00"
     },
     {
       "ticket_id": "INC-2046",
@@ -32,12 +32,12 @@
       "timestamp": "00:02:05",
       "confidence": 84,
       "severity": "high",
-      "severity_reason": "Functional failure likely if the rear pulley is not installed before the rear wheels.",
-      "incident_summary": "A worker deviated from the SOP by installing the rear wheels before the rear pulley, which is critical for proper assembly. This oversight could lead to functional issues in the rear axle, as the pulley must be installed first to ensure correct operation. The potential for a significant error exists if this is not addressed promptly.",
-      "recommended_action": "The QA manager should review the incident and assess the impact on production.",
+      "severity_reason": "The missing rear pulley installation before the rear wheels can cause functional failure and is a documented low-detectability error.",
+      "incident_summary": "The worker skipped the SOP step of installing the magenta rear pulley on the rear axle before installing the rear wheels. This deviation is critical because the pulley must be installed first to ensure proper assembly and function, and missing it can lead to functional failure that is hard to detect after wheel installation.",
+      "recommended_action": "Notify the QA manager immediately to review the assembly and determine if rework or inspection is required.",
       "status": "Open",
       "assigned_to": "QA Manager",
-      "created_at": "2026-06-22T03:40:40.819240+00:00"
+      "created_at": "2026-06-22T05:46:05.623852+00:00"
     },
     {
       "ticket_id": "INC-2047",
@@ -50,12 +50,12 @@
       "timestamp": "00:03:30",
       "confidence": 80,
       "severity": "medium",
-      "severity_reason": "Quality degradation possible due to the omission of a critical component in the assembly.",
-      "incident_summary": "During the installation of the right front wheel assembly, the worker omitted the washer, which is essential for proper assembly. Although the assembly may appear acceptable, the absence of the washer could lead to potential quality issues and affect the performance of the wheel assembly.",
-      "recommended_action": "Notify the supervisor to review the assembly and ensure corrective measures are taken.",
+      "severity_reason": "Omission of the washer may cause quality degradation but does not pose immediate safety or functional failure risks.",
+      "incident_summary": "The worker installed the right front wheel and acorn nut without the required washer behind the wheel, deviating from the SOP. Although the assembly appears acceptable, the missing washer is a known low-detectability error that could affect product quality over time.",
+      "recommended_action": "Notify the supervisor to review the incident and determine if rework or additional inspection is necessary.",
       "status": "Open",
       "assigned_to": "Supervisor",
-      "created_at": "2026-06-22T03:40:43.110206+00:00"
+      "created_at": "2026-06-22T05:46:07.468010+00:00"
     },
     {
       "ticket_id": "INC-2048",
@@ -68,12 +68,12 @@
       "timestamp": "00:05:55",
       "confidence": 83,
       "severity": "critical",
-      "severity_reason": "The absence of critical components poses an immediate safety risk and requires production to stop.",
-      "incident_summary": "During production, it was found that the build did not match the state strip as the rear pulley was absent and one front wheel washer was missing. This deviation from the SOP indicates a significant nonconformance that could lead to safety hazards and structural failure if not addressed immediately.",
-      "recommended_action": "Production must stop, and the QA manager should initiate the rework path as outlined in chapter 8.",
+      "severity_reason": "The absence of critical components like the rear pulley and a front wheel washer constitutes a nonconformance that requires immediate production halt to prevent safety risks or structural failure.",
+      "incident_summary": "During the SOP step to compare the build to the state strip, it was found that the rear pulley and one front wheel washer were missing. This mismatch violates the compliance criterion requiring all 11 components to match, indicating a nonconformance that could compromise product integrity and safety.",
+      "recommended_action": "Production must stop immediately and the rework procedure outlined in chapter 8 should be initiated to correct the build.",
       "status": "Open",
       "assigned_to": "Production Manager",
-      "created_at": "2026-06-22T03:40:45.470227+00:00"
+      "created_at": "2026-06-22T05:46:09.722420+00:00"
     }
   ]
 }

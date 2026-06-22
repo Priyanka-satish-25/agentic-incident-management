@@ -22,9 +22,10 @@ UI        →  triage, comment, escalate   →  tickets_db.json
 ```
 
 - **Agent 3** (`layer3/agent3/incident_management_agent.py`) reads a verdicts
-  JSON, filters for `Deviation` verdicts, and calls an LLM per deviation to
-  produce a structured incident record (severity, reason, summary, recommended
-  action). Incidents are auto-assigned by severity:
+  JSON and calls an LLM per `Deviation` to produce a structured incident record
+  (severity, reason, summary, recommended action). It also handles
+  `Unable to Verify` verdicts (see below) instead of dropping them. Incidents are
+  auto-assigned by severity:
 
   | Severity | Assigned to |
   |----------|-------------|
@@ -41,11 +42,20 @@ UI        →  triage, comment, escalate   →  tickets_db.json
   incident appears exactly once — nothing dropped or invented), and every causal
   link carries a written rationale.
 
+- **Unable-to-Verify handling** — when Agent 2 couldn't confirm a step (occlusion,
+  low confidence), Agent 3 no longer drops it. It asks the LLM to rate the *risk of
+  leaving the step unverified* (with a written rationale). **Low risk** is
+  auto-closed by the system (logged to QA Log); **medium or higher** is flagged
+  `Needs Review` and routed to a human — the system never guesses compliance when
+  evidence is missing. These records live in the same `*_incidents.json` (marked
+  `verdict: "Unable to Verify"`) and are excluded from the root-cause causal tree.
+
 - **UI** (`procedureguard_ui.py`) is a Streamlit app for role-based triage:
   view tickets, comment, close, and escalate up the chain
   (QA Log → Supervisor → QA Manager → Production Manager). A **Diagnoses** tab
   renders each run's causal tree, and grouped tickets show cause/effect links in
-  their detail view.
+  their detail view. A **Needs Review** tab lists unverifiable steps awaiting a
+  human call — *Mark Compliant* or *Promote to Incident*.
 
 - **Notifications** (`notifications.py`) sends email on ticket creation /
   escalation via the Resend API (optional — skipped gracefully if unconfigured).
@@ -188,8 +198,8 @@ bounded, auditable agentic behavior — see Phase 2 below).
 - **Phase 2 — bounded-agentic upgrades:** give the system real, auditable autonomy
   where it helps the workflow.
   - ✅ **Root-cause grouping** — diagnose each run as a whole (done).
-  - ☐ **Unable-to-Verify handling** — re-request verification or flag for review
-    instead of dropping these verdicts.
+  - ✅ **Unable-to-Verify handling** — risk-rate unverifiable steps; auto-close
+    low-risk, flag the rest for human review instead of dropping them (done).
   - ☐ **SLA follow-up / escalation chasing** — remind, then auto-escalate on
     thresholds.
   - ☐ **Recurring-defect memory** — flag systemic issues across runs.

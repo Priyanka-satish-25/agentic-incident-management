@@ -18,7 +18,7 @@ from pathlib import Path
 import streamlit as st
 
 try:
-    from notifications import notify_ticket_escalated
+    from notifications import notify_ticket_escalated, notify_ticket_created
     _NOTIFY = True
 except ImportError:
     _NOTIFY = False
@@ -47,7 +47,8 @@ ROLE_RANK = {"QA Log": 1, "Supervisor": 2, "QA Manager": 3, "Production Manager"
 
 SEVERITY_COLOR  = {"critical": "#c0392b", "high": "#e67e22", "medium": "#f1c40f", "low": "#27ae60"}
 SEVERITY_EMOJI  = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}
-STATUS_COLOR    = {"Open": "red", "In Review": "orange", "Escalated": "purple", "Closed": "green"}
+STATUS_COLOR    = {"Open": "red", "In Review": "orange", "Escalated": "purple",
+                   "Needs Review": "#2980b9", "Closed": "green"}
 
 ROLE_COLOR = {"root_cause": "#1F4E79", "consequence": "#8e44ad", "contributing": "#16a085"}
 ROLE_LABEL = {"root_cause": "ROOT CAUSE", "consequence": "CONSEQUENCE", "contributing": "CONTRIBUTING"}
@@ -81,10 +82,13 @@ def init_db_from_incidents(db: dict) -> dict:
         for inc in data.get("incidents", []):
             key = db_key(inc["run_id"], inc["ticket_id"])
             if key not in db:
+                # Review records (Unable to Verify) arrive with their own comments
+                # and history (incl. any auto-close note) — preserve those; plain
+                # incidents get the default "created by system" entry.
                 db[key] = {
                     **inc,
-                    "comments": [],
-                    "history": [
+                    "comments": inc.get("comments", []),
+                    "history": inc.get("history") or [
                         {"action": "Ticket created by system", "by": "System", "at": inc.get("created_at", now())[:16].replace("T", " ")}
                     ],
                 }
@@ -179,9 +183,10 @@ def login_page():
 # ── Ticket detail view ─────────────────────────────────────────────────────────
 
 def ticket_detail(key: str, db: dict, user: dict):
-    ticket = db[key]
-    sev    = ticket["severity"]
-    role   = user["role"]
+    ticket    = db[key]
+    sev       = ticket["severity"]
+    role      = user["role"]
+    is_review = ticket.get("verdict") == "Unable to Verify"
 
     if st.button("← Back to list"):
         st.session_state.selected = None
@@ -191,18 +196,23 @@ def ticket_detail(key: str, db: dict, user: dict):
                 unsafe_allow_html=True)
     st.caption(f"Run: **{ticket['run_id']}** · Step {ticket['sequence_position']} ({ticket['step_id']}) · Section: {ticket['section']}")
 
+    if is_review:
+        st.warning("❔ **Unable to Verify** — Agent 2 could not confirm whether this "
+                   "step was done correctly. The rating below is the *risk of leaving "
+                   "it unverified*, not a confirmed defect.")
+
     st.divider()
 
-    # ── Incident info ──────────────────────────────────────────────────────────
+    # ── Incident / review info ───────────────────────────────────────────────────
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Severity",   sev.upper())
+    c1.metric("Risk" if is_review else "Severity", sev.upper())
     c2.metric("Confidence", f"{ticket['confidence']}%")
     c3.metric("Timestamp",  ticket["timestamp"])
     c4.metric("Status",     ticket["status"])
 
     st.markdown(f"**Assigned to:** {ticket['assigned_to']}")
-    st.markdown(f"**Why {sev}:** {ticket['severity_reason']}")
-    st.markdown(f"**Summary:** {ticket['incident_summary']}")
+    st.markdown(f"**{'Why this risk level' if is_review else f'Why {sev}'}:** {ticket['severity_reason']}")
+    st.markdown(f"**{'What could not be verified' if is_review else 'Summary'}:** {ticket['incident_summary']}")
     st.markdown(f"**Recommended action:** {ticket['recommended_action']}")
 
     # ── Root-cause analysis (from the Root-Cause Agent) ─────────────────────────
@@ -260,6 +270,31 @@ def ticket_detail(key: str, db: dict, user: dict):
         st.info("This ticket is closed.")
     elif not user_can_act(role, ticket):
         st.warning(f"This ticket is assigned to **{ticket['assigned_to']}**. You don't have permission to act on it.")
+    elif is_review:
+        # Unable-to-Verify: human adjudicates the unknown.
+        st.caption("Agent 2 couldn't confirm this step. Resolve it:")
+        col_ok, col_promote = st.columns(2)
+
+        with col_ok:
+            if st.button("✅ Mark Compliant", key=f"ok_{key}", use_container_width=True):
+                ticket["status"] = "Closed"
+                ticket["history"].append({"action": "Reviewed — marked Compliant (step confirmed acceptable)",
+                                          "by": user["name"], "at": now()})
+                save_db(db)
+                st.success("Marked compliant and closed.")
+                st.rerun()
+
+        with col_promote:
+            if st.button("⬆️ Promote to Incident", key=f"promote_{key}", use_container_width=True):
+                ticket["verdict"] = "Deviation"
+                ticket["status"]  = "Open"
+                ticket["history"].append({"action": "Reviewed — promoted to Deviation incident",
+                                          "by": user["name"], "at": now()})
+                save_db(db)
+                if _NOTIFY:
+                    notify_ticket_created(ticket)
+                st.success("Promoted to an incident ticket.")
+                st.rerun()
     else:
         col_close, col_escalate = st.columns(2)
 
@@ -319,9 +354,13 @@ def ticket_list(tickets: list, db: dict, label: str, tab_prefix: str = ""):
         with st.container(border=True):
             col1, col2 = st.columns([5, 1])
             with col1:
+                review_tag = (" &nbsp; <span style='background:#2980b9;color:white;"
+                              "padding:1px 8px;border-radius:3px;font-size:0.68rem;"
+                              "font-weight:bold'>❔ UNABLE TO VERIFY</span>"
+                              if ticket.get("verdict") == "Unable to Verify" else "")
                 st.markdown(
                     f"{severity_badge(sev)} &nbsp; **{ticket['ticket_id']}** · {ticket['run_id']} "
-                    f"· Step {ticket['sequence_position']}",
+                    f"· Step {ticket['sequence_position']}{review_tag}",
                     unsafe_allow_html=True,
                 )
                 st.caption(ticket["sop_step"])
@@ -381,15 +420,23 @@ def main_app(db: dict, user: dict):
             st.rerun()
         return
 
-    # Main tabs
-    tab_mine, tab_all, tab_diag, tab_history = st.tabs(
-        ["📋 My Tickets", "🗂️ All Tickets", "🔍 Diagnoses", "🕓 History"]
-    )
+    def _is_review(t):
+        return t.get("verdict") == "Unable to Verify"
 
     all_items     = [(k, t) for k, t in db.items()]
-    mine_open     = [(k, t) for k, t in all_items if t["assigned_to"] == role and t["status"] != "Closed"]
-    all_open      = [(k, t) for k, t in all_items if t["status"] != "Closed"]
+    reviews_open  = [(k, t) for k, t in all_items if _is_review(t) and t["status"] == "Needs Review"]
+    # Incident tabs show confirmed deviations only — pending reviews live in their own tab.
+    incidents     = [(k, t) for k, t in all_items if not (_is_review(t) and t["status"] == "Needs Review")]
+    mine_open     = [(k, t) for k, t in incidents if t["assigned_to"] == role and t["status"] != "Closed"]
+    all_open      = [(k, t) for k, t in incidents if t["status"] != "Closed"]
     history_items = [(k, t) for k, t in all_items if t["status"] == "Closed"]
+
+    review_label = f"🔎 Needs Review ({len(reviews_open)})" if reviews_open else "🔎 Needs Review"
+
+    # Main tabs
+    tab_mine, tab_all, tab_review, tab_diag, tab_history = st.tabs(
+        ["📋 My Tickets", "🗂️ All Tickets", review_label, "🔍 Diagnoses", "🕓 History"]
+    )
 
     with tab_mine:
         st.markdown(f"### Tickets assigned to you ({len(mine_open)} open)")
@@ -411,6 +458,17 @@ def main_app(db: dict, user: dict):
         sel_rol  = c2.multiselect("Assigned to", rol_opts, default=rol_opts, key="all_rol")
         filtered = [(k, t) for k, t in all_open if t["severity"] in sel_sev and t["assigned_to"] in sel_rol]
         ticket_list(filtered, db, "open", tab_prefix="all")
+
+    with tab_review:
+        st.markdown(f"### Steps Agent 2 couldn't verify ({len(reviews_open)} pending)")
+        st.caption("Agent 3 flagged these as medium-or-higher verification risk, so the "
+                   "system did **not** auto-resolve them. A human decides: confirm compliant, "
+                   "or promote to an incident. (Low-risk unverifiable steps are auto-closed and "
+                   "appear in History.)")
+        if reviews_open:
+            ticket_list(reviews_open, db, "review", tab_prefix="review")
+        else:
+            st.success("✅ No steps pending verification review.")
 
     with tab_diag:
         groupings = st.session_state.get("groupings", {})

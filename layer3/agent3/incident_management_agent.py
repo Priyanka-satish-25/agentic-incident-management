@@ -78,6 +78,46 @@ Return ONLY a JSON object with these exact fields — no markdown, no explanatio
 """
 
 
+VERIFY_SYSTEM_PROMPT = """\
+You are a verification-risk assessor for a manufacturing compliance system.
+
+Agent 2 watched a worker perform an SOP step but COULD NOT confirm whether it was
+done correctly (the view was occluded, confidence was low, etc.). The step is
+neither confirmed-correct nor confirmed-wrong — it is UNKNOWN.
+
+Your job: assess how risky it is to leave this step UNVERIFIED. You are NOT
+deciding whether the worker complied — you are rating the danger of the unknown.
+
+Risk levels (use the same words as severity):
+  "critical" → an unverified failure here could cause immediate safety risk or structural failure.
+  "high"     → an unverified failure here would likely cause functional failure.
+  "medium"   → an unverified failure here could degrade quality.
+  "low"      → this step is cosmetic/minor; leaving it unverified is acceptable.
+
+Return ONLY a JSON object with these exact fields — no markdown, no explanation:
+{
+  "severity": "<critical|high|medium|low>",
+  "severity_reason": "<one sentence: why this risk level, given the step matters this much>",
+  "incident_summary": "<2-3 sentences: what step could not be verified, why Agent 2 couldn't confirm it, and what's at stake if it was done wrong>",
+  "recommended_action": "<one sentence: e.g. re-record from a clearer angle, physically inspect, or accept as low-risk>"
+}\
+"""
+
+
+def _build_verify_prompt(verdict: dict) -> str:
+    return f"""\
+Assess the verification risk of this UNVERIFIED SOP step.
+
+SOP Step:            {verdict['description']}
+Compliance Criterion:{verdict['compliance_criterion']}
+Why unverifiable:    {verdict['reasoning']}
+Timestamp in video:  {verdict['timestamp']}
+Detection confidence:{verdict['confidence']}%
+
+Return the JSON risk assessment.\
+"""
+
+
 def _build_user_prompt(deviation: dict) -> str:
     duration_context = ""
     if deviation["check_type"] == "duration":
@@ -112,6 +152,61 @@ def classify_deviation(deviation: dict) -> dict:
         temperature=0.1,
     )
     return json.loads(response.choices[0].message.content)
+
+
+def assess_unverifiable(verdict: dict) -> dict:
+    """Call the LLM to rate the risk of leaving an unverifiable step unchecked."""
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": VERIFY_SYSTEM_PROMPT},
+            {"role": "user",   "content": _build_verify_prompt(verdict)},
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.1,
+    )
+    return json.loads(response.choices[0].message.content)
+
+
+def build_review(verdict: dict, assessment: dict, ticket_id: str) -> dict:
+    """Build an 'Unable to Verify' review record (same shape as an incident).
+
+    Auto-resolve rule: low verification risk → closed by the system; anything
+    medium or above → routed to a human as 'Needs Review' (the system never
+    guesses compliance when the evidence is missing).
+    """
+    severity   = assessment["severity"]
+    auto_close = severity == "low"
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    history = [
+        {"action": "Review item created by system (Agent 2 unable to verify)",
+         "by": "System", "at": created_at[:16].replace("T", " ")}
+    ]
+    if auto_close:
+        history.append({"action": "Auto-closed — low verification risk",
+                        "by": "System", "at": created_at[:16].replace("T", " ")})
+
+    return {
+        "ticket_id":          ticket_id,
+        "run_id":             None,           # filled in by run()
+        "step_id":            verdict["step_id"],
+        "sequence_position":  verdict["sequence_position"],
+        "section":            verdict["section"],
+        "sop_step":           verdict["description"],
+        "verdict":            "Unable to Verify",
+        "timestamp":          verdict["timestamp"],
+        "confidence":         verdict["confidence"],
+        "severity":           severity,
+        "severity_reason":    assessment["severity_reason"],
+        "incident_summary":   assessment["incident_summary"],
+        "recommended_action": assessment["recommended_action"],
+        "status":             "Closed" if auto_close else "Needs Review",
+        "assigned_to":        "QA Log" if auto_close else _assign_to(severity),
+        "created_at":         created_at,
+        "comments":           [],
+        "history":            history,
+    }
 
 
 def build_incident(deviation: dict, classification: dict, ticket_id: str) -> dict:
@@ -181,15 +276,20 @@ def _print_report(run_id: str, incidents: list[dict]) -> None:
     print("=" * 60)
 
     for inc in incidents:
-        sev   = inc["severity"]
-        icon  = SEVERITY_ICON[sev]
-        print(f"\n  [{icon}] {inc['ticket_id']} — {inc['sop_step']}")
+        sev    = inc["severity"]
+        icon   = SEVERITY_ICON[sev]
+        is_rev = inc["verdict"] == "Unable to Verify"
+        tag    = "  ❔ UNABLE TO VERIFY" if is_rev else ""
+        print(f"\n  [{icon}] {inc['ticket_id']} — {inc['sop_step']}{tag}")
         print(f"  Timestamp:  {inc['timestamp']}  |  Confidence: {inc['confidence']}%")
         print(f"  Summary:    {inc['incident_summary']}")
         print(f"  Action:     {inc['recommended_action']}")
         print(f"  Assigned:   {inc['assigned_to']}  |  Status: {inc['status']}")
 
-        if sev in ("critical", "high"):
+        if is_rev:
+            if inc["status"] == "Needs Review":
+                print(f"  👁  NEEDS HUMAN REVIEW — routed to {inc['assigned_to']}")
+        elif sev in ("critical", "high"):
             print(f"  ⚠  ESCALATION REQUIRED — notifying {inc['assigned_to']}")
 
     print("\n" + "=" * 60 + "\n")
@@ -207,16 +307,21 @@ def run(verdicts_json_path: str) -> dict:
     run_id = data["run_id"]
     all_verdicts = data["verdicts"]
 
-    deviations = [v for v in all_verdicts if v["verdict"] == "Deviation"]
-    print(f"[Agent 3] run_id={run_id} | deviations={len(deviations)} of {len(all_verdicts)} steps")
+    deviations   = [v for v in all_verdicts if v["verdict"] == "Deviation"]
+    unverifiable = [v for v in all_verdicts if v["verdict"] == "Unable to Verify"]
+    compliant    = [v for v in all_verdicts if v["verdict"] == "Compliant"]
+    print(f"[Agent 3] run_id={run_id} | {len(all_verdicts)} steps: "
+          f"{len(deviations)} deviation(s), {len(unverifiable)} unable-to-verify, "
+          f"{len(compliant)} compliant")
 
-    if not deviations:
-        print("[Agent 3] No deviations found — nothing to process.")
-        return {"run_id": run_id, "incident_count": 0}
+    if not deviations and not unverifiable:
+        print("[Agent 3] No deviations or unverifiable steps — nothing to process.")
+        return {"run_id": run_id, "incident_count": 0, "review_count": 0}
 
+    # ── Deviations → incidents ──────────────────────────────────────────────────
     incidents = []
     for dev in deviations:
-        print(f"[Agent 3] Classifying {dev['step_id']} ({dev['timestamp']})...")
+        print(f"[Agent 3] Classifying deviation {dev['step_id']} ({dev['timestamp']})...")
         classification = classify_deviation(dev)
         ticket_id      = _next_ticket_id()
         incident       = build_incident(dev, classification, ticket_id)
@@ -227,20 +332,48 @@ def run(verdicts_json_path: str) -> dict:
         if _NOTIFY:
             notify_ticket_created(incident)
 
-    out_path = _save_incidents(run_id, incidents, path.parent)
-    print(f"\n[Agent 3] Incidents saved → {out_path.name}")
+    # ── Unable-to-Verify → review records (auto-resolve low risk) ────────────────
+    reviews = []
+    for v in unverifiable:
+        print(f"[Agent 3] Assessing unverifiable {v['step_id']} ({v['timestamp']})...")
+        assessment = assess_unverifiable(v)
+        ticket_id  = _next_ticket_id()
+        review     = build_review(v, assessment, ticket_id)
+        review["run_id"] = run_id
+        reviews.append(review)
+        print(f"  → {ticket_id} | risk={assessment['severity'].upper()} | {review['status']}")
 
-    _print_report(run_id, incidents)
+    # ── Guardrail: every verdict accounted for exactly once ─────────────────────
+    accounted = len(incidents) + len(reviews) + len(compliant)
+    if accounted != len(all_verdicts):
+        raise RuntimeError(
+            f"Verdict accounting mismatch: {accounted} handled != {len(all_verdicts)} total "
+            f"(incidents={len(incidents)}, reviews={len(reviews)}, compliant={len(compliant)})"
+        )
+
+    # Reviews are stored in the same incidents file (distinguished by verdict).
+    all_records = incidents + reviews
+    out_path = _save_incidents(run_id, all_records, path.parent)
+    print(f"\n[Agent 3] Saved {len(all_records)} record(s) → {out_path.name} "
+          f"({len(incidents)} incident(s), {len(reviews)} review item(s))")
+
+    _print_report(run_id, all_records)
 
     result = {
         "run_id":         run_id,
         "incident_count": len(incidents),
+        "review_count":   len(reviews),
         "incidents_path": str(out_path),
     }
 
     # ── Root-cause analysis (Phase 2) ──────────────────────────────────────────
     # Reason over the whole run to separate root causes from their consequences.
+    # Only confirmed deviations feed the causal tree — unverifiable items are
+    # unknowns, not causes, so they are deliberately excluded.
     # Best-effort: a failure here must not invalidate the incidents already saved.
+    if not incidents:
+        print("[Agent 3] No confirmed deviations — skipping root-cause analysis.")
+        return result
     try:
         from root_cause_agent import analyze_and_save
         grouped = analyze_and_save(run_id, incidents, path.parent, quiet=True)

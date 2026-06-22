@@ -1,7 +1,7 @@
 {
   "run_id": "RUN-102",
-  "generated_at": "2026-06-22T03:40:33.563407+00:00",
-  "total_incidents": 2,
+  "generated_at": "2026-06-22T06:17:02.632451+00:00",
+  "total_incidents": 3,
   "incidents": [
     {
       "ticket_id": "INC-2045",
@@ -13,13 +13,13 @@
       "verdict": "Deviation",
       "timestamp": "00:01:18",
       "confidence": 86,
-      "severity": "high",
-      "severity_reason": "Reversed pin orientation poses a functional failure risk if not corrected, as it is a documented error mode.",
-      "incident_summary": "During the installation of the front chassis pin, the pin was fully seated but inserted with the head orientation reversed, contrary to the SOP. This deviation is significant because it has been identified as a potential failure mode that could lead to functional issues in the assembly.",
-      "recommended_action": "The QA manager should review the incident and assess the impact on production quality.",
+      "severity": "medium",
+      "severity_reason": "The reversed pin orientation may cause quality degradation but does not pose an immediate safety or functional failure risk.",
+      "incident_summary": "During the installation of the front chassis pin, the pin was fully seated but oriented with the head reversed contrary to the SOP. This deviation is a known error mode that can affect product quality and has previously escaped automated visual inspection.",
+      "recommended_action": "Notify the supervisor to review the incident and consider process improvements to detect reversed pin orientation.",
       "status": "Open",
-      "assigned_to": "QA Manager",
-      "created_at": "2026-06-22T03:40:30.627851+00:00"
+      "assigned_to": "Supervisor",
+      "created_at": "2026-06-22T06:16:57.285611+00:00"
     },
     {
       "ticket_id": "INC-2046",
@@ -32,12 +32,38 @@
       "timestamp": "00:02:25",
       "confidence": 88,
       "severity": "high",
-      "severity_reason": "Functional failure likely if the wrong braces are not corrected before production continues.",
-      "incident_summary": "A worker deviated from the SOP by installing short braces instead of the required long braces for the rear chassis. This error could lead to structural integrity issues in the final product, as the wrong brace lengths were not identified prior to fitting. It is crucial to address this deviation to ensure compliance with safety and quality standards.",
-      "recommended_action": "The QA manager must review the installation and determine the necessary corrective actions.",
+      "severity_reason": "Incorrect brace installation can lead to functional failure of the chassis assembly if not corrected.",
+      "incident_summary": "The worker installed short braces instead of the required long braces during the rear chassis installation step. This deviation from the SOP compromises the structural integrity and alignment of the chassis, potentially causing assembly issues or failure in later stages.",
+      "recommended_action": "Notify the QA manager immediately to review the assembly and replace the incorrect braces with the correct long braces.",
       "status": "Open",
       "assigned_to": "QA Manager",
-      "created_at": "2026-06-22T03:40:33.563252+00:00"
+      "created_at": "2026-06-22T06:16:59.805139+00:00"
+    },
+    {
+      "ticket_id": "INC-2047",
+      "run_id": "RUN-102",
+      "step_id": "STEP-007",
+      "sequence_position": 7,
+      "section": "3. Rear chassis assembly",
+      "sop_step": "Install the rear-rear chassis pin: verify the pin, insert through the rearmost bore position and push to a full seat.",
+      "verdict": "Unable to Verify",
+      "timestamp": "00:03:20",
+      "confidence": 38,
+      "severity": "high",
+      "severity_reason": "An unverified failure to properly install the rear-rear chassis pin could cause functional failure of the chassis assembly.",
+      "incident_summary": "The step to install the rear-rear chassis pin could not be verified because the rearmost bore was occluded by the worker's hand and brace edge, preventing confirmation of full seat and correct orientation. If the pin is not fully seated or incorrectly oriented, it may compromise the structural integrity and function of the chassis.",
+      "recommended_action": "Re-record from a clearer angle or physically inspect the pin installation to confirm compliance.",
+      "status": "Needs Review",
+      "assigned_to": "QA Manager",
+      "created_at": "2026-06-22T06:17:02.632270+00:00",
+      "comments": [],
+      "history": [
+        {
+          "action": "Review item created by system (Agent 2 unable to verify)",
+          "by": "System",
+          "at": "2026-06-22 06:17"
+        }
+      ]
     }
   ]
 }

@@ -1,50 +1,53 @@
 {
   "run_id": "RUN-103",
-  "analyzed_at": "2026-06-22T04:12:50.933264+00:00",
-  "model": "gpt-4o-mini",
+  "analyzed_at": "2026-06-22T05:46:16.055721+00:00",
+  "model": "gpt-4.1-mini",
   "total_incidents": 4,
   "root_cause_count": 3,
   "group_count": 2,
-  "diagnosis": "This production run has two distinct root causes related to component installation errors. The findings highlight critical deviations in the assembly process that could lead to functional failures.",
+  "diagnosis": "This production run has two distinct root causes: incorrect fastener installation at the front bracket and missing components in the wheel assemblies, both leading to critical functional and safety risks.",
   "groups": [
     {
-      "label": "Incorrect Component Installation",
+      "label": "Incorrect fastener used on front bracket",
       "root_cause_tickets": [
-        "INC-2045",
-        "INC-2046"
+        "INC-2045"
       ],
       "members": [
         {
           "ticket_id": "INC-2045",
           "role": "root_cause",
-          "reason": "The installation of an acorn nut instead of the required bracket screw is a critical error that compromises assembly integrity."
-        },
+          "caused_by": [],
+          "reason": "The installation of an acorn nut instead of the specified threaded bracket screw is an independent root cause compromising assembly integrity."
+        }
+      ]
+    },
+    {
+      "label": "Missing components in wheel assemblies",
+      "root_cause_tickets": [
+        "INC-2046",
+        "INC-2047"
+      ],
+      "members": [
         {
           "ticket_id": "INC-2046",
           "role": "root_cause",
-          "reason": "Installing the rear wheels before the rear pulley is a significant deviation that can lead to functional issues in the rear axle."
+          "caused_by": [],
+          "reason": "Skipping the installation of the rear pulley before the rear wheels is a root cause that can cause functional failure."
+        },
+        {
+          "ticket_id": "INC-2047",
+          "role": "root_cause",
+          "caused_by": [],
+          "reason": "Omission of the washer behind the front wheel is a root cause that degrades product quality."
         },
         {
           "ticket_id": "INC-2048",
           "role": "consequence",
           "caused_by": [
-            "INC-2045",
-            "INC-2046"
+            "INC-2046",
+            "INC-2047"
           ],
-          "reason": "The failure to match the state strip indicates the absence of critical components due to the earlier installation errors."
-        }
-      ]
-    },
-    {
-      "label": "Omission of Critical Assembly Component",
-      "root_cause_tickets": [
-        "INC-2047"
-      ],
-      "members": [
-        {
-          "ticket_id": "INC-2047",
-          "role": "root_cause",
-          "reason": "The omission of the washer in the front wheel assembly is a critical defect that could degrade quality and performance."
+          "reason": "The state strip comparison detected missing rear pulley and front wheel washer, reporting the consequences of the root causes INC-2046 and INC-2047."
         }
       ]
     }

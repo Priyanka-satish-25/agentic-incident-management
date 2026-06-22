@@ -1,28 +1,37 @@
 {
   "run_id": "RUN-102",
-  "analyzed_at": "2026-06-22T04:16:39.851497+00:00",
-  "model": "gpt-4o-mini",
+  "analyzed_at": "2026-06-22T06:17:06.544694+00:00",
+  "model": "gpt-4.1-mini",
   "total_incidents": 2,
   "root_cause_count": 2,
-  "group_count": 1,
-  "diagnosis": "This production run has two distinct root causes related to incorrect component installation. The incidents involve improper orientation of a chassis pin and the use of incorrect brace lengths.",
+  "group_count": 2,
+  "diagnosis": "This run has two distinct root causes: one related to incorrect pin orientation in the front chassis assembly and another involving incorrect brace selection in the rear chassis assembly.",
   "groups": [
     {
-      "label": "Incorrect Component Installation",
+      "label": "Front chassis pin reversed orientation",
       "root_cause_tickets": [
-        "INC-2045",
-        "INC-2046"
+        "INC-2045"
       ],
       "members": [
         {
           "ticket_id": "INC-2045",
           "role": "root_cause",
-          "reason": "The reversed pin orientation during installation is a significant defect that poses a functional failure risk."
-        },
+          "caused_by": [],
+          "reason": "The pin was installed fully seated but reversed in orientation, directly violating the SOP and potentially degrading quality."
+        }
+      ]
+    },
+    {
+      "label": "Rear chassis brace misinstallation",
+      "root_cause_tickets": [
+        "INC-2046"
+      ],
+      "members": [
         {
           "ticket_id": "INC-2046",
           "role": "root_cause",
-          "reason": "The installation of short braces instead of the required long braces is a critical defect that could compromise structural integrity."
+          "caused_by": [],
+          "reason": "Short braces were installed instead of long braces, violating the SOP and risking structural failure."
         }
       ]
     }
