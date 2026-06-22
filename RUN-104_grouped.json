@@ -1,0 +1,32 @@
+{
+  "run_id": "RUN-104",
+  "analyzed_at": "2026-06-22T04:24:25.581203+00:00",
+  "model": "gpt-4o-mini",
+  "total_incidents": 2,
+  "root_cause_count": 1,
+  "group_count": 1,
+  "diagnosis": "This production run has one distinct root cause related to the omission of a critical component. The missing right rear wheel is the primary issue leading to a significant risk in vehicle safety.",
+  "groups": [
+    {
+      "label": "Omission of right rear wheel",
+      "root_cause_tickets": [
+        "INC-2045"
+      ],
+      "members": [
+        {
+          "ticket_id": "INC-2045",
+          "role": "root_cause",
+          "reason": "The omission of the right rear wheel from the assembly is a critical defect that requires corrective action to ensure safety."
+        },
+        {
+          "ticket_id": "INC-2046",
+          "role": "consequence",
+          "caused_by": [
+            "INC-2045"
+          ],
+          "reason": "The state verification step reported the missing right rear wheel, which is a direct consequence of the root cause."
+        }
+      ]
+    }
+  ]
+}

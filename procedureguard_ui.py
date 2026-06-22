@@ -49,6 +49,9 @@ SEVERITY_COLOR  = {"critical": "#c0392b", "high": "#e67e22", "medium": "#f1c40f"
 SEVERITY_EMOJI  = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}
 STATUS_COLOR    = {"Open": "red", "In Review": "orange", "Escalated": "purple", "Closed": "green"}
 
+ROLE_COLOR = {"root_cause": "#1F4E79", "consequence": "#8e44ad", "contributing": "#16a085"}
+ROLE_LABEL = {"root_cause": "ROOT CAUSE", "consequence": "CONSEQUENCE", "contributing": "CONTRIBUTING"}
+
 
 # ── Tickets DB (JSON file as persistent store) ─────────────────────────────────
 
@@ -89,6 +92,33 @@ def init_db_from_incidents(db: dict) -> dict:
     return db
 
 
+def load_groupings() -> tuple[dict, dict]:
+    """Scan *_grouped.json → (per-run diagnosis dict, per-ticket role lookup keyed by db_key)."""
+    by_run, ticket_meta = {}, {}
+    for path in sorted(SCRIPT_DIR.glob("*_grouped.json")):
+        data = json.loads(path.read_text())
+        run_id = data["run_id"]
+        by_run[run_id] = data
+        for g in data.get("groups", []):
+            for m in g.get("members", []):
+                ticket_meta[db_key(run_id, m["ticket_id"])] = {
+                    "role":        m.get("role", "root_cause"),
+                    "caused_by":   m.get("caused_by", []),
+                    "reason":      m.get("reason", ""),
+                    "group_label": g.get("label", ""),
+                    "explains":    [],
+                }
+    # Reverse links: which downstream tickets each ticket explains.
+    for run_id, data in by_run.items():
+        for g in data.get("groups", []):
+            for m in g.get("members", []):
+                for cb in m.get("caused_by", []):
+                    cb_key = db_key(run_id, cb)
+                    if cb_key in ticket_meta:
+                        ticket_meta[cb_key]["explains"].append(m["ticket_id"])
+    return by_run, ticket_meta
+
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 def severity_badge(sev: str) -> str:
@@ -102,6 +132,13 @@ def severity_badge(sev: str) -> str:
 def status_badge(status: str) -> str:
     c = STATUS_COLOR.get(status, "grey")
     return f"<span style='color:{c};font-weight:bold'>{status}</span>"
+
+
+def role_badge(role: str) -> str:
+    c = ROLE_COLOR.get(role, "#888")
+    return (f"<span style='background:{c};color:white;padding:1px 8px;"
+            f"border-radius:3px;font-size:0.68rem;font-weight:bold'>"
+            f"{ROLE_LABEL.get(role, role.upper())}</span>")
 
 
 def user_can_act(user_role: str, ticket: dict) -> bool:
@@ -167,6 +204,27 @@ def ticket_detail(key: str, db: dict, user: dict):
     st.markdown(f"**Why {sev}:** {ticket['severity_reason']}")
     st.markdown(f"**Summary:** {ticket['incident_summary']}")
     st.markdown(f"**Recommended action:** {ticket['recommended_action']}")
+
+    # ── Root-cause analysis (from the Root-Cause Agent) ─────────────────────────
+    meta = st.session_state.get("ticket_meta", {}).get(key)
+    if meta:
+        st.divider()
+        st.markdown("#### 🔍 Root-Cause Analysis")
+        st.markdown(f"{role_badge(meta['role'])} &nbsp; *{meta['group_label']}*", unsafe_allow_html=True)
+        st.caption(meta["reason"])
+
+        if meta.get("caused_by"):
+            st.markdown("**Caused by:**")
+            for cb in meta["caused_by"]:
+                if st.button(f"↳ {cb}", key=f"cb_{key}_{cb}"):
+                    st.session_state.selected = db_key(ticket["run_id"], cb)
+                    st.rerun()
+        if meta.get("explains"):
+            st.markdown("**Explains (downstream effects):**")
+            for ex in meta["explains"]:
+                if st.button(f"⟶ {ex}", key=f"ex_{key}_{ex}"):
+                    st.session_state.selected = db_key(ticket["run_id"], ex)
+                    st.rerun()
 
     st.divider()
 
@@ -274,6 +332,13 @@ def ticket_list(tickets: list, db: dict, label: str, tab_prefix: str = ""):
                     f"Status: {status_badge(status)}",
                     unsafe_allow_html=True,
                 )
+                meta = st.session_state.get("ticket_meta", {}).get(key)
+                if meta and meta["role"] != "root_cause":
+                    cb = ", ".join(meta.get("caused_by", []))
+                    st.markdown(
+                        f"🔗 {role_badge(meta['role'])}" + (f" &nbsp;⟵ caused by **{cb}**" if cb else ""),
+                        unsafe_allow_html=True,
+                    )
             with col2:
                 if st.button("View", key=f"view_{tab_prefix}_{key}", use_container_width=True):
                     st.session_state.selected = key
@@ -317,7 +382,9 @@ def main_app(db: dict, user: dict):
         return
 
     # Main tabs
-    tab_mine, tab_all, tab_history = st.tabs(["📋 My Tickets", "🗂️ All Tickets", "🕓 History"])
+    tab_mine, tab_all, tab_diag, tab_history = st.tabs(
+        ["📋 My Tickets", "🗂️ All Tickets", "🔍 Diagnoses", "🕓 History"]
+    )
 
     all_items     = [(k, t) for k, t in db.items()]
     mine_open     = [(k, t) for k, t in all_items if t["assigned_to"] == role and t["status"] != "Closed"]
@@ -345,6 +412,45 @@ def main_app(db: dict, user: dict):
         filtered = [(k, t) for k, t in all_open if t["severity"] in sel_sev and t["assigned_to"] in sel_rol]
         ticket_list(filtered, db, "open", tab_prefix="all")
 
+    with tab_diag:
+        groupings = st.session_state.get("groupings", {})
+        st.markdown("### 🔍 Root-cause diagnoses")
+        st.caption("Each production run analyzed as a whole — independent root causes vs. their downstream consequences.")
+        if not groupings:
+            st.info("No diagnoses found. Generate them with: "
+                    "`python3 root_cause_agent.py <RUN>_incidents.json`")
+        else:
+            sel_run = st.selectbox("Run", sorted(groupings.keys()), key="diag_run")
+            data = groupings[sel_run]
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Incidents",   data["total_incidents"])
+            c2.metric("Root causes",  data["root_cause_count"])
+            c3.metric("Groups",       data["group_count"])
+            st.info(f"**Diagnosis:** {data['diagnosis']}")
+
+            order = {"root_cause": 0, "contributing": 1, "consequence": 2}
+            for n, g in enumerate(data["groups"], 1):
+                with st.container(border=True):
+                    st.markdown(f"**Group {n}: {g['label']}**")
+                    for m in sorted(g["members"], key=lambda x: order.get(x["role"], 9)):
+                        key = db_key(sel_run, m["ticket_id"])
+                        tk  = db.get(key, {})
+                        sev = tk.get("severity", "low")
+                        cb  = f" &nbsp;⟵ caused by {', '.join(m['caused_by'])}" if m.get("caused_by") else ""
+                        col1, col2 = st.columns([6, 1])
+                        with col1:
+                            st.markdown(
+                                f"{severity_badge(sev)} &nbsp; {role_badge(m['role'])} &nbsp; "
+                                f"**{m['ticket_id']}**{cb}",
+                                unsafe_allow_html=True,
+                            )
+                            st.caption(tk.get("sop_step", ""))
+                            st.caption(f"↳ {m['reason']}")
+                        with col2:
+                            if key in db and st.button("View", key=f"diag_view_{key}"):
+                                st.session_state.selected = key
+                                st.rerun()
+
     with tab_history:
         st.markdown(f"### Closed tickets ({len(history_items)})")
         if history_items:
@@ -360,6 +466,11 @@ if "db" not in st.session_state:
     _db = load_db()
     _db = init_db_from_incidents(_db)
     st.session_state.db = _db
+
+if "groupings" not in st.session_state:
+    _by_run, _ticket_meta = load_groupings()
+    st.session_state.groupings   = _by_run
+    st.session_state.ticket_meta = _ticket_meta
 
 db = st.session_state.db
 

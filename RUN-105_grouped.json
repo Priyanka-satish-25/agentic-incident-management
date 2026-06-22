@@ -1,0 +1,25 @@
+{
+  "run_id": "RUN-105",
+  "analyzed_at": "2026-06-22T04:16:50.455947+00:00",
+  "model": "gpt-4o-mini",
+  "total_incidents": 1,
+  "root_cause_count": 1,
+  "group_count": 1,
+  "diagnosis": "This production run has one distinct root cause related to a missing wheel washer during the reinstallation process. The incident highlights a critical safety issue due to a deviation from the SOP.",
+  "groups": [
+    {
+      "label": "Missing Wheel Washer",
+      "root_cause_tickets": [
+        "INC-2045"
+      ],
+      "members": [
+        {
+          "ticket_id": "INC-2045",
+          "role": "root_cause",
+          "caused_by": [],
+          "reason": "The incident reports a missing wheel washer, which is a direct violation of the SOP and poses a significant safety risk."
+        }
+      ]
+    }
+  ]
+}

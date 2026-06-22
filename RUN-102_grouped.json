@@ -1,0 +1,30 @@
+{
+  "run_id": "RUN-102",
+  "analyzed_at": "2026-06-22T04:16:39.851497+00:00",
+  "model": "gpt-4o-mini",
+  "total_incidents": 2,
+  "root_cause_count": 2,
+  "group_count": 1,
+  "diagnosis": "This production run has two distinct root causes related to incorrect component installation. The incidents involve improper orientation of a chassis pin and the use of incorrect brace lengths.",
+  "groups": [
+    {
+      "label": "Incorrect Component Installation",
+      "root_cause_tickets": [
+        "INC-2045",
+        "INC-2046"
+      ],
+      "members": [
+        {
+          "ticket_id": "INC-2045",
+          "role": "root_cause",
+          "reason": "The reversed pin orientation during installation is a significant defect that poses a functional failure risk."
+        },
+        {
+          "ticket_id": "INC-2046",
+          "role": "root_cause",
+          "reason": "The installation of short braces instead of the required long braces is a critical defect that could compromise structural integrity."
+        }
+      ]
+    }
+  ]
+}

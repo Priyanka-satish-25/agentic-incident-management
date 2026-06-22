@@ -1,6 +1,6 @@
 {
   "run_id": "RUN-104",
-  "generated_at": "2026-06-22T03:40:51.693866+00:00",
+  "generated_at": "2026-06-22T04:24:21.773914+00:00",
   "total_incidents": 2,
   "incidents": [
     {
@@ -14,12 +14,12 @@
       "timestamp": "00:02:40",
       "confidence": 91,
       "severity": "high",
-      "severity_reason": "Functional failure likely due to the omission of the right rear wheel, which could lead to safety issues during operation.",
-      "incident_summary": "During production, the right rear wheel was omitted from the assembly, resulting in the acorn nut being improperly secured onto the washer. This deviation from the SOP poses a risk of functional failure, as the complete stack must be rebuilt and the chapter 6 audit repeated to ensure compliance.",
-      "recommended_action": "The QA manager should review the incident and oversee the necessary corrective actions.",
+      "severity_reason": "Functional failure likely due to the omission of the right rear wheel, which could compromise vehicle safety.",
+      "incident_summary": "During production, the right rear wheel was omitted entirely from the assembly, resulting in the acorn nut being improperly secured onto the washer. This deviation from the SOP poses a significant risk as it requires the complete stack to be rebuilt and the chapter 6 audit to be repeated to ensure compliance and safety.",
+      "recommended_action": "The QA manager must review the incident and oversee the necessary corrective actions.",
       "status": "Open",
       "assigned_to": "QA Manager",
-      "created_at": "2026-06-22T03:40:49.317881+00:00"
+      "created_at": "2026-06-22T04:24:19.042586+00:00"
     },
     {
       "ticket_id": "INC-2046",
@@ -32,12 +32,12 @@
       "timestamp": "00:04:50",
       "confidence": 87,
       "severity": "high",
-      "severity_reason": "The missing right rear wheel poses a functional failure risk if not corrected, requiring QA manager review.",
-      "incident_summary": "During the state verification step, it was found that the right rear wheel was missing from the vehicle assembly, which means the build does not meet the acceptance criteria for state 13. This deviation could lead to significant functional issues if the unit is released without correction.",
-      "recommended_action": "The QA manager should review the incident and ensure the missing component is addressed before proceeding.",
+      "severity_reason": "The missing right rear wheel poses a functional failure risk if not corrected.",
+      "incident_summary": "During the state verification step, it was found that the right rear wheel was missing from the vehicle assembly, which does not meet the acceptance criteria for state 13. This deviation could lead to significant functional issues if the unit is released without correction.",
+      "recommended_action": "The QA manager must review the incident and ensure the missing component is addressed before proceeding.",
       "status": "Open",
       "assigned_to": "QA Manager",
-      "created_at": "2026-06-22T03:40:51.693699+00:00"
+      "created_at": "2026-06-22T04:24:21.773785+00:00"
     }
   ]
 }

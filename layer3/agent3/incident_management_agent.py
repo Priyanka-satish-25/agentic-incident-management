@@ -230,11 +230,26 @@ def run(verdicts_json_path: str) -> dict:
 
     _print_report(run_id, incidents)
 
-    return {
+    result = {
         "run_id":         run_id,
         "incident_count": len(incidents),
         "incidents_path": str(out_path),
     }
+
+    # ── Root-cause analysis (Phase 2) ──────────────────────────────────────────
+    # Reason over the whole run to separate root causes from their consequences.
+    # Best-effort: a failure here must not invalidate the incidents already saved.
+    try:
+        from root_cause_agent import analyze_and_save
+        grouped = analyze_and_save(run_id, incidents, path.parent, quiet=True)
+        grouped_path = path.parent / f"{run_id}_grouped.json"
+        result["grouped_path"] = str(grouped_path)
+        print(f"[Agent 3] Root-cause diagnosis → {grouped_path.name} "
+              f"({grouped['root_cause_count']} root cause(s) in {grouped['group_count']} group(s))")
+    except Exception as e:
+        print(f"[Agent 3] Root-cause analysis skipped ({e.__class__.__name__}: {e})")
+
+    return result
 
 
 if __name__ == "__main__":

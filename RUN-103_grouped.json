@@ -1,0 +1,52 @@
+{
+  "run_id": "RUN-103",
+  "analyzed_at": "2026-06-22T04:12:50.933264+00:00",
+  "model": "gpt-4o-mini",
+  "total_incidents": 4,
+  "root_cause_count": 3,
+  "group_count": 2,
+  "diagnosis": "This production run has two distinct root causes related to component installation errors. The findings highlight critical deviations in the assembly process that could lead to functional failures.",
+  "groups": [
+    {
+      "label": "Incorrect Component Installation",
+      "root_cause_tickets": [
+        "INC-2045",
+        "INC-2046"
+      ],
+      "members": [
+        {
+          "ticket_id": "INC-2045",
+          "role": "root_cause",
+          "reason": "The installation of an acorn nut instead of the required bracket screw is a critical error that compromises assembly integrity."
+        },
+        {
+          "ticket_id": "INC-2046",
+          "role": "root_cause",
+          "reason": "Installing the rear wheels before the rear pulley is a significant deviation that can lead to functional issues in the rear axle."
+        },
+        {
+          "ticket_id": "INC-2048",
+          "role": "consequence",
+          "caused_by": [
+            "INC-2045",
+            "INC-2046"
+          ],
+          "reason": "The failure to match the state strip indicates the absence of critical components due to the earlier installation errors."
+        }
+      ]
+    },
+    {
+      "label": "Omission of Critical Assembly Component",
+      "root_cause_tickets": [
+        "INC-2047"
+      ],
+      "members": [
+        {
+          "ticket_id": "INC-2047",
+          "role": "root_cause",
+          "reason": "The omission of the washer in the front wheel assembly is a critical defect that could degrade quality and performance."
+        }
+      ]
+    }
+  ]
+}

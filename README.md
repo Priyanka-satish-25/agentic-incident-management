@@ -14,10 +14,11 @@ owned by teammates).
 ## Pipeline
 
 ```
-Agent 1  →  extract SOP steps          →  *_steps_input.json
-Agent 2  →  verify worker vs. SOP       →  *_verdicts.json   (Compliant / Deviation / Unable-to-verify)
-Agent 3  →  classify deviations         →  *_incidents.json  ← THIS REPO
-UI       →  triage, comment, escalate   →  tickets_db.json
+Agent 1   →  extract SOP steps          →  *_steps_input.json
+Agent 2   →  verify worker vs. SOP       →  *_verdicts.json   (Compliant / Deviation / Unable-to-verify)
+Agent 3   →  classify deviations         →  *_incidents.json  ┐
+Root-Cause Agent → diagnose the run      →  *_grouped.json    ┘ ← THIS REPO
+UI        →  triage, comment, escalate   →  tickets_db.json
 ```
 
 - **Agent 3** (`layer3/agent3/incident_management_agent.py`) reads a verdicts
@@ -32,9 +33,19 @@ UI       →  triage, comment, escalate   →  tickets_db.json
   | medium   | Supervisor |
   | low      | QA Log |
 
+- **Root-Cause Agent** (`root_cause_agent.py`) reasons over *all* of a run's
+  incidents together to separate independent **root causes** from their downstream
+  **consequences** (e.g. a state-strip checkpoint failure that merely *reports*
+  earlier component omissions). It runs automatically at the end of each Agent 3
+  run, writing `*_grouped.json`. Bounded autonomy: read-only, guardrailed (every
+  incident appears exactly once — nothing dropped or invented), and every causal
+  link carries a written rationale.
+
 - **UI** (`procedureguard_ui.py`) is a Streamlit app for role-based triage:
   view tickets, comment, close, and escalate up the chain
-  (QA Log → Supervisor → QA Manager → Production Manager).
+  (QA Log → Supervisor → QA Manager → Production Manager). A **Diagnoses** tab
+  renders each run's causal tree, and grouped tickets show cause/effect links in
+  their detail view.
 
 - **Notifications** (`notifications.py`) sends email on ticket creation /
   escalation via the Resend API (optional — skipped gracefully if unconfigured).
@@ -91,15 +102,21 @@ GITHUB_MODEL=gpt-4o-mini
 
 ### 1. Generate incidents from verdicts (Agent 3)
 
-Run once per verdicts file. Output is written next to the input as
-`<run_id>_incidents.json`:
+Run once per verdicts file. Each run writes `<run_id>_incidents.json` **and**
+automatically produces the root-cause diagnosis `<run_id>_grouped.json`:
 
 ```bash
 cd layer3/agent3
-python3 incident_management_agent.py ../../sample_verdicts_input.json   # → RUN-102_incidents.json
-python3 incident_management_agent.py ../../RUN-103_verdicts.json        # → RUN-103_incidents.json
-python3 incident_management_agent.py ../../RUN-104_verdicts.json        # → RUN-104_incidents.json
-python3 incident_management_agent.py ../../RUN-105_verdicts.json        # → RUN-105_incidents.json
+python3 incident_management_agent.py ../../sample_verdicts_input.json   # → RUN-102_incidents.json + RUN-102_grouped.json
+python3 incident_management_agent.py ../../RUN-103_verdicts.json        # → RUN-103_*
+python3 incident_management_agent.py ../../RUN-104_verdicts.json        # → RUN-104_*
+python3 incident_management_agent.py ../../RUN-105_verdicts.json        # → RUN-105_*
+```
+
+To (re)generate only the diagnosis for an existing incidents file:
+
+```bash
+python3 root_cause_agent.py RUN-103_incidents.json   # → RUN-103_grouped.json (prints the causal tree)
 ```
 
 ### 2. View incidents in the terminal (optional)
@@ -139,12 +156,14 @@ ProcedureGuard/
 │   ├── incident_management_agent.py   # Agent 3 — deviation → incident classifier
 │   ├── requirements.txt
 │   └── .env                           # LLM credentials (gitignored)
-├── procedureguard_ui.py               # Streamlit triage UI
+├── root_cause_agent.py                # Root-Cause Agent — per-run causal diagnosis
+├── procedureguard_ui.py               # Streamlit triage UI (incl. Diagnoses tab)
 ├── notifications.py                   # Email notifications (Resend)
 ├── view_incidents.py                  # Terminal incident viewer
 ├── sample_verdicts_input.json         # RUN-102 verdicts (STEMFIE)
 ├── RUN-10x_verdicts.json              # Agent 2 output (input to Agent 3)
 ├── RUN-10x_incidents.json             # Agent 3 output (generated)
+├── RUN-10x_grouped.json               # Root-Cause Agent output (generated)
 └── tickets_db.json                    # UI state store (generated)
 ```
 
@@ -153,8 +172,9 @@ ProcedureGuard/
 ## Status & roadmap
 
 **Now:** working demo. Flat-JSON persistence, demo logins, GitHub Models +
-`gpt-4o-mini`. Not yet agentic — Agent 3 is a single fixed-prompt classification
-call per deviation.
+`gpt-4o-mini`. Agent 3 classifies each deviation; the **Root-Cause Agent** then
+reasons over the whole run to diagnose cause-vs-consequence (the first slice of
+bounded, auditable agentic behavior — see Phase 2 below).
 
 **Planned:**
 
@@ -162,7 +182,12 @@ call per deviation.
   verdicts-in / incidents-out), Cosmos DB (replaces `tickets_db.json`), Key Vault,
   Azure Communication Services (email). Designed to keep local-file fallback so
   the demo still runs offline. *Currently parked.*
-- **Phase 2 — agentic Agent 3:** rebuild as a tool-calling agent (context lookups,
-  autonomous routing / escalation) using Azure OpenAI function calling or Azure AI
-  Foundry Agent Service — only if real decision-making is wanted beyond fixed
-  classification.
+- **Phase 2 — bounded-agentic upgrades:** give the system real, auditable autonomy
+  where it helps the workflow.
+  - ✅ **Root-cause grouping** — diagnose each run as a whole (done).
+  - ☐ **Unable-to-Verify handling** — re-request verification or flag for review
+    instead of dropping these verdicts.
+  - ☐ **SLA follow-up / escalation chasing** — remind, then auto-escalate on
+    thresholds.
+  - ☐ **Recurring-defect memory** — flag systemic issues across runs.
+  - High-stakes actions (stop production, quarantine) stay human-gated.
