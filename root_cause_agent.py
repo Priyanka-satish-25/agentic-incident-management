@@ -26,16 +26,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AzureOpenAI
 
 # Agent 3 keeps its credentials in layer3/agent3/.env
 load_dotenv(Path(__file__).parent / "layer3" / "agent3" / ".env")
 
-client = OpenAI(
-    api_key=os.environ["GITHUB_TOKEN"],
-    base_url="https://models.inference.ai.azure.com",
+# ── Azure OpenAI client ──────────────────────────────────────────────────────
+client = AzureOpenAI(
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_API_KEY"],
+    api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21"),
 )
-MODEL = os.environ.get("GITHUB_MODEL", "gpt-4o-mini")
+# On Azure, `model` is the *deployment name* you created (not the base model id).
+MODEL = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1-mini")
 
 
 SYSTEM_PROMPT = """\

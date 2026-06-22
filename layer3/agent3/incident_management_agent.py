@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import AzureOpenAI
 
 load_dotenv()
 
@@ -35,12 +35,14 @@ try:
 except ImportError:
     _NOTIFY = False
 
-# ── GitHub Models client (OpenAI-compatible endpoint) ─────────────────────────
-client = OpenAI(
-    api_key=os.environ["GITHUB_TOKEN"],
-    base_url="https://models.inference.ai.azure.com",
+# ── Azure OpenAI client ───────────────────────────────────────────────────────
+client = AzureOpenAI(
+    azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+    api_key=os.environ["AZURE_OPENAI_API_KEY"],
+    api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21"),
 )
-MODEL = os.environ.get("GITHUB_MODEL", "gpt-4o")
+# On Azure, `model` is the *deployment name* you created (not the base model id).
+MODEL = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1-mini")
 
 # ── Ticket ID counter (in production this would come from a DB sequence) ───────
 _ticket_counter = 2044

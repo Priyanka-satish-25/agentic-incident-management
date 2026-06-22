@@ -78,8 +78,8 @@ pip install streamlit
 
 ### Configure the LLM backend
 
-Agent 3 currently uses **GitHub Marketplace Models** (free, rate-limited).
-Copy the example env and add a token:
+Agent 3 and the Root-Cause Agent use **Azure OpenAI**.
+Copy the example env and add your Azure credentials:
 
 ```bash
 cp layer3/agent3/.env.example layer3/agent3/.env
@@ -88,12 +88,15 @@ cp layer3/agent3/.env.example layer3/agent3/.env
 Edit `layer3/agent3/.env`:
 
 ```ini
-GITHUB_TOKEN=<your GitHub PAT with "Models: Read-only" permission>
-GITHUB_MODEL=gpt-4o-mini
+AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/
+AZURE_OPENAI_API_KEY=<your Azure OpenAI key>
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini      # the deployment name you created
+AZURE_OPENAI_API_VERSION=2024-10-21       # optional; this is the default
 ```
 
-> Get a token at https://github.com/settings/personal-access-tokens
-> (fine-grained → Account permissions → **Models: Read-only**).
+> Get the endpoint and key from your Azure OpenAI resource → **Keys and Endpoint**.
+> `AZURE_OPENAI_DEPLOYMENT` must be the **deployment name** from Azure AI Studio
+> (what you named the deployment), not the base model id.
 > `.env` is gitignored — never commit it.
 
 ---
@@ -171,17 +174,17 @@ ProcedureGuard/
 
 ## Status & roadmap
 
-**Now:** working demo. Flat-JSON persistence, demo logins, GitHub Models +
-`gpt-4o-mini`. Agent 3 classifies each deviation; the **Root-Cause Agent** then
+**Now:** working demo. Flat-JSON persistence, demo logins, Azure OpenAI +
+`gpt-4.1-mini`. Agent 3 classifies each deviation; the **Root-Cause Agent** then
 reasons over the whole run to diagnose cause-vs-consequence (the first slice of
 bounded, auditable agentic behavior — see Phase 2 below).
 
 **Planned:**
 
-- **Phase 1 — base Azure services:** Azure OpenAI (LLM), Blob Storage (shared
-  verdicts-in / incidents-out), Cosmos DB (replaces `tickets_db.json`), Key Vault,
-  Azure Communication Services (email). Designed to keep local-file fallback so
-  the demo still runs offline. *Currently parked.*
+- **Phase 1 — base Azure services:** ✅ Azure OpenAI (LLM, `gpt-4.1-mini`) now
+  powers both agents. Remaining: Blob Storage (shared verdicts-in / incidents-out),
+  Cosmos DB (replaces `tickets_db.json`), Key Vault, Azure Communication Services
+  (email). Designed to keep local-file fallback so the demo still runs offline.
 - **Phase 2 — bounded-agentic upgrades:** give the system real, auditable autonomy
   where it helps the workflow.
   - ✅ **Root-cause grouping** — diagnose each run as a whole (done).
