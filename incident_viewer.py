@@ -11,7 +11,7 @@ import streamlit as st
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="ProcedureGuard — Incidents",
+    page_title="AIMS — Incidents",
     page_icon="🔍",
     layout="wide",
 )
@@ -31,7 +31,7 @@ SEVERITY_EMOJI = {
 }
 
 # ── Sidebar — file picker ──────────────────────────────────────────────────────
-st.sidebar.title("ProcedureGuard")
+st.sidebar.title("AIMS")
 st.sidebar.markdown("### Load incidents file")
 
 json_files = sorted(Path(".").glob("*_incidents.json"))

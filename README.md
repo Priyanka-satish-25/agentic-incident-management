@@ -1,4 +1,4 @@
-# ProcedureGuard
+# AIMS — Agentic Incident Management System
 
 **Manufacturing compliance & incident management.**
 
@@ -187,7 +187,7 @@ Schedule it (e.g. every 15 min via cron or `/schedule`) for hands-off escalation
 ## Project layout
 
 ```
-ProcedureGuard/
+AIMS/
 ├── layer3/agent3/
 │   ├── incident_management_agent.py   # Agent 3 — deviation → incident classifier
 │   ├── requirements.txt

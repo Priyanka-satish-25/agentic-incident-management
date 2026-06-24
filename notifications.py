@@ -1,12 +1,12 @@
 """
-ProcedureGuard — Email Notification Module (Resend API)
+AIMS — Email Notification Module (Resend API)
 
 Sends emails when tickets are raised or escalated.
 
 Setup:
   1. Sign up free at https://resend.com
   2. Create an API key (Dashboard → API Keys)
-  3. Add to ProcedureGuard/.env:
+  3. Add to AIMS/.env:
 
 Required .env variables:
     RESEND_API_KEY      your Resend API key (re_xxxxxxxxxxxx)
@@ -105,12 +105,12 @@ def _base_layout(header_color: str, title: str, body_html: str) -> str:
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto">
       <div style="background:{header_color};padding:20px;border-radius:8px 8px 0 0">
-        <h2 style="color:white;margin:0">🛡️ ProcedureGuard — {title}</h2>
+        <h2 style="color:white;margin:0">🛡️ AIMS — {title}</h2>
       </div>
       <div style="border:1px solid #ddd;border-top:none;padding:24px;border-radius:0 0 8px 8px">
         {body_html}
         <p style="color:#888;font-size:0.8rem;margin-top:24px">
-          Automated notification from ProcedureGuard. Do not reply to this email.
+          Automated notification from AIMS. Do not reply to this email.
         </p>
       </div>
     </div>
@@ -124,7 +124,7 @@ def notify_ticket_created(ticket: dict) -> bool:
     sev   = ticket["severity"]
     emoji = SEVERITY_EMOJI.get(sev, "")
 
-    subject = f"[ProcedureGuard] {emoji} NEW TICKET {ticket['ticket_id']} — {sev.upper()} — {ticket['run_id']}"
+    subject = f"[AIMS] {emoji} NEW TICKET {ticket['ticket_id']} — {sev.upper()} — {ticket['run_id']}"
 
     body = f"""
       {_ticket_table(ticket)}
@@ -135,7 +135,7 @@ def notify_ticket_created(ticket: dict) -> bool:
       <h3 style="color:#1F4E79">Recommended Action</h3>
       <p style="color:#333">{ticket['recommended_action']}</p>
       <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:12px;margin-top:20px">
-        <strong>⚠️ Action required:</strong> Log in to the ProcedureGuard dashboard
+        <strong>⚠️ Action required:</strong> Log in to the AIMS dashboard
         at <code>http://localhost:8501</code> to review this ticket.
       </div>
     """
@@ -149,7 +149,7 @@ def notify_ticket_reminder(ticket: dict) -> bool:
     sev   = ticket["severity"]
     emoji = SEVERITY_EMOJI.get(sev, "")
 
-    subject = f"[ProcedureGuard] ⏰ REMINDER — {ticket['ticket_id']} — {sev.upper()} — awaiting your action"
+    subject = f"[AIMS] ⏰ REMINDER — {ticket['ticket_id']} — {sev.upper()} — awaiting your action"
 
     body = f"""
       <p style="color:#333">
@@ -160,7 +160,7 @@ def notify_ticket_reminder(ticket: dict) -> bool:
       <h3 style="color:#b8860b">Recommended Action</h3>
       <p style="color:#333">{ticket['recommended_action']}</p>
       <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:12px;margin-top:20px">
-        <strong>⏰ Action required:</strong> Log in to the ProcedureGuard dashboard
+        <strong>⏰ Action required:</strong> Log in to the AIMS dashboard
         at <code>http://localhost:8501</code> to act on this ticket before it escalates.
       </div>
     """
@@ -174,7 +174,7 @@ def notify_ticket_escalated(ticket: dict, escalated_by: str) -> bool:
     sev   = ticket["severity"]
     emoji = SEVERITY_EMOJI.get(sev, "")
 
-    subject = f"[ProcedureGuard] {emoji} ESCALATED TO YOU — {ticket['ticket_id']} — {sev.upper()}"
+    subject = f"[AIMS] {emoji} ESCALATED TO YOU — {ticket['ticket_id']} — {sev.upper()}"
 
     body = f"""
       <p style="color:#333">
@@ -187,7 +187,7 @@ def notify_ticket_escalated(ticket: dict, escalated_by: str) -> bool:
       <p style="color:#333">{ticket['recommended_action']}</p>
       <div style="background:#f3e5f5;border:1px solid #9c27b0;border-radius:4px;padding:12px;margin-top:20px">
         <strong>⚠️ This ticket requires your attention.</strong> Log in to the
-        ProcedureGuard dashboard at <code>http://localhost:8501</code> to review it.
+        AIMS dashboard at <code>http://localhost:8501</code> to review it.
       </div>
     """
     return _send(to, subject, _base_layout("#6a0dad", "Ticket Escalated To You", body))

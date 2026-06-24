@@ -1,5 +1,5 @@
 """
-ProcedureGuard — SLA Agent (standalone runner)
+AIMS — SLA Agent (standalone runner)
 ===============================================
 Scans the ticket store, applies SLA policy (reminders + auto-escalation), saves,
 and sends notifications. Runs once and exits — register it on a schedule (cron,
@@ -59,7 +59,7 @@ def run(fast_forward: int = 0, quiet: bool = False) -> dict:
 
 
 if __name__ == "__main__":
-    p = argparse.ArgumentParser(description="ProcedureGuard SLA follow-up agent.")
+    p = argparse.ArgumentParser(description="AIMS SLA follow-up agent.")
     p.add_argument("--fast-forward", type=int, default=0, metavar="MIN",
                    help="Simulate MIN minutes elapsed (for demos).")
     p.add_argument("--quiet", action="store_true", help="Print only a summary line.")

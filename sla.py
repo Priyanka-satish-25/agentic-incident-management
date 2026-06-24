@@ -1,5 +1,5 @@
 """
-ProcedureGuard — SLA Follow-up & Escalation Chasing (Phase 2)
+AIMS — SLA Follow-up & Escalation Chasing (Phase 2)
 =============================================================
 Bounded autonomy for open tickets: as a ticket ages, the system first *reminds*
 the assignee, then *auto-escalates* up the chain if it's still unaddressed —

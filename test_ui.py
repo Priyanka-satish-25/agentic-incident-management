@@ -1,5 +1,5 @@
 """
-Playwright UI test for ProcedureGuard
+Playwright UI test for AIMS
 Run: python3 test_ui.py
 
 Requires: pip install playwright && playwright install chromium
@@ -56,7 +56,7 @@ async def main():
             print("screenshot_debug.png saved — check what's on screen")
 
         await browser.close()
-        print("\nDone. Check the PNG files in your ProcedureGuard folder.")
+        print("\nDone. Check the PNG files in your AIMS folder.")
 
 
 asyncio.run(main())

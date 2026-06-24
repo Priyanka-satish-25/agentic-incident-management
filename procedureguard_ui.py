@@ -1,5 +1,5 @@
 """
-ProcedureGuard — Role-Based Incident Management UI
+AIMS — Role-Based Incident Management UI
 
 Run:
   streamlit run procedureguard_ui.py
@@ -26,7 +26,7 @@ except ImportError:
     _NOTIFY = False
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-st.set_page_config(page_title="ProcedureGuard", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="AIMS", page_icon="🛡️", layout="wide")
 
 SCRIPT_DIR = Path(__file__).parent
 DB_PATH = SCRIPT_DIR / "tickets_db.json"
@@ -175,7 +175,7 @@ def login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("## 🛡️ ProcedureGuard")
+        st.markdown("## 🛡️ AIMS")
         st.markdown("##### Manufacturing Compliance & Incident Management")
         st.divider()
 
@@ -416,7 +416,7 @@ def main_app(db: dict, user: dict):
 
     # Sidebar
     with st.sidebar:
-        st.markdown(f"## 🛡️ ProcedureGuard")
+        st.markdown(f"## 🛡️ AIMS")
         st.divider()
         st.markdown(f"**{user['name']}**")
         st.markdown(f"Role: `{role}`")
