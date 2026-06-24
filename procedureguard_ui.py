@@ -17,6 +17,8 @@ from pathlib import Path
 
 import streamlit as st
 
+import sla
+
 try:
     from notifications import notify_ticket_escalated, notify_ticket_created
     _NOTIFY = True
@@ -48,7 +50,15 @@ ROLE_RANK = {"QA Log": 1, "Supervisor": 2, "QA Manager": 3, "Production Manager"
 SEVERITY_COLOR  = {"critical": "#c0392b", "high": "#e67e22", "medium": "#f1c40f", "low": "#27ae60"}
 SEVERITY_EMOJI  = {"critical": "🔴", "high": "🟠", "medium": "🟡", "low": "🟢"}
 STATUS_COLOR    = {"Open": "red", "In Review": "orange", "Escalated": "purple",
-                   "Needs Review": "#2980b9", "Closed": "green"}
+                   "Needs Review": "#2980b9", "SLA Breached": "#8b0000", "Closed": "green"}
+
+SLA_LEVEL_STYLE = {  # (text color, prefix icon) for the SLA badge
+    "ok":       ("#27ae60", "⏳"),
+    "due":      ("#e67e22", "⏳"),
+    "over":     ("#c0392b", "🔴"),
+    "breached": ("#8b0000", "⛔"),
+    "closed":   ("#888",    ""),
+}
 
 ROLE_COLOR = {"root_cause": "#1F4E79", "consequence": "#8e44ad", "contributing": "#16a085"}
 ROLE_LABEL = {"root_cause": "ROOT CAUSE", "consequence": "CONSEQUENCE", "contributing": "CONTRIBUTING"}
@@ -145,6 +155,15 @@ def role_badge(role: str) -> str:
             f"{ROLE_LABEL.get(role, role.upper())}</span>")
 
 
+def sla_badge(ticket: dict) -> str:
+    s = sla.sla_status(ticket)
+    if s["level"] == "closed":
+        return ""
+    color, icon = SLA_LEVEL_STYLE.get(s["level"], ("#888", ""))
+    return (f"<span style='color:{color};font-weight:bold;font-size:0.8rem'>"
+            f"{icon} {s['label']}</span>")
+
+
 def user_can_act(user_role: str, ticket: dict) -> bool:
     """User can act on tickets assigned to their role or below."""
     return ROLE_RANK.get(user_role, 0) >= ROLE_RANK.get(ticket["assigned_to"], 0)
@@ -204,11 +223,15 @@ def ticket_detail(key: str, db: dict, user: dict):
     st.divider()
 
     # ── Incident / review info ───────────────────────────────────────────────────
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Risk" if is_review else "Severity", sev.upper())
     c2.metric("Confidence", f"{ticket['confidence']}%")
     c3.metric("Timestamp",  ticket["timestamp"])
     c4.metric("Status",     ticket["status"])
+    c5.metric("SLA",        sla.sla_status(ticket)["label"])
+
+    if ticket.get("escalation_count"):
+        st.caption(f"⬆️ Auto-escalated {ticket['escalation_count']}× by the SLA agent.")
 
     st.markdown(f"**Assigned to:** {ticket['assigned_to']}")
     st.markdown(f"**{'Why this risk level' if is_review else f'Why {sev}'}:** {ticket['severity_reason']}")
@@ -364,11 +387,13 @@ def ticket_list(tickets: list, db: dict, label: str, tab_prefix: str = ""):
                     unsafe_allow_html=True,
                 )
                 st.caption(ticket["sop_step"])
+                sla_part = sla_badge(ticket)
                 st.markdown(
                     f"🕐 `{ticket['timestamp']}` &nbsp;|&nbsp; "
                     f"Confidence: {ticket['confidence']}% &nbsp;|&nbsp; "
                     f"Assigned: **{ticket['assigned_to']}** &nbsp;|&nbsp; "
-                    f"Status: {status_badge(status)}",
+                    f"Status: {status_badge(status)}"
+                    + (f" &nbsp;|&nbsp; {sla_part}" if sla_part else ""),
                     unsafe_allow_html=True,
                 )
                 meta = st.session_state.get("ticket_meta", {}).get(key)
@@ -409,6 +434,18 @@ def main_app(db: dict, user: dict):
             for key in ["logged_in", "username", "user", "selected"]:
                 st.session_state.pop(key, None)
             st.rerun()
+
+    # Banner for any autonomous SLA actions taken on this load.
+    sla_actions = st.session_state.get("sla_actions", [])
+    if sla_actions:
+        esc = sum(1 for a in sla_actions if a["action"] == "escalated")
+        rem = sum(1 for a in sla_actions if a["action"] == "reminded")
+        brc = sum(1 for a in sla_actions if a["action"] == "breached")
+        parts = []
+        if esc: parts.append(f"⬆️ {esc} auto-escalated")
+        if rem: parts.append(f"🔔 {rem} reminded")
+        if brc: parts.append(f"⛔ {brc} SLA-breached")
+        st.warning("**SLA agent acted:** " + " · ".join(parts))
 
     # If a ticket is selected, show detail view
     if st.session_state.get("selected"):
@@ -531,6 +568,15 @@ if "groupings" not in st.session_state:
     st.session_state.ticket_meta = _ticket_meta
 
 db = st.session_state.db
+
+# SLA follow-up: on every load, catch up any tickets that crossed a threshold
+# while nobody was looking. Idempotent — reminders fire once per window, and
+# escalation resets the clock, so reruns won't double-act.
+_sla_actions = sla.evaluate_slas(db)
+if _sla_actions:
+    save_db(db)
+    sla.send_sla_notifications(db, _sla_actions)
+st.session_state.sla_actions = _sla_actions
 
 if not st.session_state.get("logged_in"):
     login_page()

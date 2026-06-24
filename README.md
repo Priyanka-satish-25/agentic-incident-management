@@ -57,8 +57,19 @@ UI        →  triage, comment, escalate   →  tickets_db.json
   their detail view. A **Needs Review** tab lists unverifiable steps awaiting a
   human call — *Mark Compliant* or *Promote to Incident*.
 
-- **Notifications** (`notifications.py`) sends email on ticket creation /
-  escalation via the Resend API (optional — skipped gracefully if unconfigured).
+- **SLA Agent** (`sla.py` + `sla_agent.py`) chases open tickets as they age.
+  Per-severity thresholds (critical 30m/1h → low 36h/72h) drive a two-stage
+  policy: first a **reminder** to the assignee, then **auto-escalation** up the
+  chain if still unaddressed. It runs on every UI load *and* as a standalone
+  agent you can schedule (cron / `/schedule`), so escalation happens even with
+  nobody watching. Bounded: escalation only nudges a ticket upward (never closes
+  it or stops production), every action is logged as "SLA Agent (System)", and it
+  is idempotent. `python3 sla_agent.py --fast-forward <min>` simulates elapsed
+  time for demos.
+
+- **Notifications** (`notifications.py`) sends email on ticket creation,
+  escalation, and SLA reminders via the Resend API (optional — skipped gracefully
+  if unconfigured).
 
 ---
 
@@ -159,6 +170,18 @@ Opens at `http://localhost:8501`. On first launch it scans all
 > Deleting `*_incidents.json` does **not** clear the UI's store. To start clean,
 > also delete `tickets_db.json` — it rebuilds from the incident files on next launch.
 
+### 4. Run the SLA agent (optional)
+
+The UI applies SLA policy on every load, but you can also run the agent on its
+own so tickets are chased while the UI is closed:
+
+```bash
+python3 sla_agent.py                      # evaluate against the real clock
+python3 sla_agent.py --fast-forward 300   # demo: simulate 300 min elapsed
+```
+
+Schedule it (e.g. every 15 min via cron or `/schedule`) for hands-off escalation.
+
 ---
 
 ## Project layout
@@ -170,6 +193,8 @@ ProcedureGuard/
 │   ├── requirements.txt
 │   └── .env                           # LLM credentials (gitignored)
 ├── root_cause_agent.py                # Root-Cause Agent — per-run causal diagnosis
+├── sla.py                             # SLA policy engine (reminders + escalation)
+├── sla_agent.py                       # SLA Agent — standalone/schedulable runner
 ├── procedureguard_ui.py               # Streamlit triage UI (incl. Diagnoses tab)
 ├── notifications.py                   # Email notifications (Resend)
 ├── view_incidents.py                  # Terminal incident viewer
@@ -200,7 +225,7 @@ bounded, auditable agentic behavior — see Phase 2 below).
   - ✅ **Root-cause grouping** — diagnose each run as a whole (done).
   - ✅ **Unable-to-Verify handling** — risk-rate unverifiable steps; auto-close
     low-risk, flag the rest for human review instead of dropping them (done).
-  - ☐ **SLA follow-up / escalation chasing** — remind, then auto-escalate on
-    thresholds.
+  - ✅ **SLA follow-up / escalation chasing** — remind, then auto-escalate on
+    per-severity thresholds; runs on UI load and as a schedulable agent (done).
   - ☐ **Recurring-defect memory** — flag systemic issues across runs.
   - High-stakes actions (stop production, quarantine) stay human-gated.
