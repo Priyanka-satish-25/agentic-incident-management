@@ -142,6 +142,31 @@ def notify_ticket_created(ticket: dict) -> bool:
     return _send(to, subject, _base_layout("#1F4E79", "New Incident Ticket", body))
 
 
+def notify_ticket_reminder(ticket: dict) -> bool:
+    """Nudge the current assignee that an open ticket is approaching its SLA deadline."""
+    role  = ticket["assigned_to"]
+    to    = ROLE_EMAILS.get(role, NOTIFY_FROM)
+    sev   = ticket["severity"]
+    emoji = SEVERITY_EMOJI.get(sev, "")
+
+    subject = f"[ProcedureGuard] ⏰ REMINDER — {ticket['ticket_id']} — {sev.upper()} — awaiting your action"
+
+    body = f"""
+      <p style="color:#333">
+        This ticket is assigned to <strong>{role}</strong> and is approaching its
+        SLA deadline. Please review it before it auto-escalates.
+      </p>
+      {_ticket_table(ticket)}
+      <h3 style="color:#b8860b">Recommended Action</h3>
+      <p style="color:#333">{ticket['recommended_action']}</p>
+      <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:4px;padding:12px;margin-top:20px">
+        <strong>⏰ Action required:</strong> Log in to the ProcedureGuard dashboard
+        at <code>http://localhost:8501</code> to act on this ticket before it escalates.
+      </div>
+    """
+    return _send(to, subject, _base_layout("#b8860b", "SLA Reminder", body))
+
+
 def notify_ticket_escalated(ticket: dict, escalated_by: str) -> bool:
     """Notify the new assignee when a ticket is escalated."""
     role  = ticket["assigned_to"]
