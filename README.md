@@ -227,5 +227,4 @@ bounded, auditable agentic behavior — see Phase 2 below).
     low-risk, flag the rest for human review instead of dropping them (done).
   - ✅ **SLA follow-up / escalation chasing** — remind, then auto-escalate on
     per-severity thresholds; runs on UI load and as a schedulable agent (done).
-  - ☐ **Recurring-defect memory** — flag systemic issues across runs.
   - High-stakes actions (stop production, quarantine) stay human-gated.
