@@ -50,7 +50,7 @@ UI        →  triage, comment, escalate   →  tickets_db.json
   evidence is missing. These records live in the same `*_incidents.json` (marked
   `verdict: "Unable to Verify"`) and are excluded from the root-cause causal tree.
 
-- **UI** (`procedureguard_ui.py`) is a Streamlit app for role-based triage:
+- **UI** (`aims_ui.py`) is a Streamlit app for role-based triage:
   view tickets, comment, close, and escalate up the chain
   (QA Log → Supervisor → QA Manager → Production Manager). A **Diagnoses** tab
   renders each run's causal tree, and grouped tickets show cause/effect links in
@@ -152,7 +152,7 @@ python3 view_incidents.py RUN-103_incidents.json
 ### 3. Launch the triage UI
 
 ```bash
-streamlit run procedureguard_ui.py
+streamlit run aims_ui.py
 ```
 
 Opens at `http://localhost:8501`. On first launch it scans all
@@ -195,7 +195,7 @@ agentic-incident-management/
 ├── root_cause_agent.py                # Root-Cause Agent — per-run causal diagnosis
 ├── sla.py                             # SLA policy engine (reminders + escalation)
 ├── sla_agent.py                       # SLA Agent — standalone/schedulable runner
-├── procedureguard_ui.py               # Streamlit triage UI (incl. Diagnoses tab)
+├── aims_ui.py                         # Streamlit triage UI (incl. Diagnoses tab)
 ├── notifications.py                   # Email notifications (Resend)
 ├── view_incidents.py                  # Terminal incident viewer
 ├── sample_verdicts_input.json         # RUN-102 verdicts (STEMFIE)

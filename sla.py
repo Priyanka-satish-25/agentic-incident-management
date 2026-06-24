@@ -6,7 +6,7 @@ the assignee, then *auto-escalates* up the chain if it's still unaddressed —
 without a human kicking it off.
 
 This module is the shared brain. It is used by:
-  • procedureguard_ui.py  — evaluated on every page load (catch-up)
+  • aims_ui.py            — evaluated on every page load (catch-up)
   • sla_agent.py          — runnable standalone / on a schedule (proactive)
 
 Design guarantees (the "bounded, auditable" part):
@@ -19,7 +19,7 @@ Design guarantees (the "bounded, auditable" part):
 
 from datetime import datetime, timedelta, timezone
 
-# Escalation chain — mirrors procedureguard_ui.ESCALATION_PATH.
+# Escalation chain — mirrors aims_ui.ESCALATION_PATH.
 ESCALATION_PATH = {
     "QA Log":             "Supervisor",
     "Supervisor":         "QA Manager",

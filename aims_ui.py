@@ -2,7 +2,7 @@
 AIMS — Role-Based Incident Management UI
 
 Run:
-  streamlit run procedureguard_ui.py
+  streamlit run aims_ui.py
 
 Demo credentials:
   alice / alice  →  Production Manager
