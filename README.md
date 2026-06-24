@@ -1,6 +1,6 @@
 # ProcedureGuard
 
-🛡️ **Manufacturing compliance & incident management.**
+**Manufacturing compliance & incident management.**
 
 A worker assembles a product on video, the build is checked against a Standard
 Operating Procedure (SOP), and any deviation is turned into a tracked incident
@@ -216,15 +216,15 @@ bounded, auditable agentic behavior — see Phase 2 below).
 
 **Planned:**
 
-- **Phase 1 — base Azure services:** ✅ Azure OpenAI (LLM, `gpt-4.1-mini`) now
+- **Phase 1 — base Azure services:** Azure OpenAI (LLM, `gpt-4.1-mini`) now
   powers both agents. Remaining: Blob Storage (shared verdicts-in / incidents-out),
   Cosmos DB (replaces `tickets_db.json`), Key Vault, Azure Communication Services
   (email). Designed to keep local-file fallback so the demo still runs offline.
 - **Phase 2 — bounded-agentic upgrades:** give the system real, auditable autonomy
   where it helps the workflow.
-  - ✅ **Root-cause grouping** — diagnose each run as a whole (done).
-  - ✅ **Unable-to-Verify handling** — risk-rate unverifiable steps; auto-close
+  - **Root-cause grouping** — diagnose each run as a whole (done).
+  - **Unable-to-Verify handling** — risk-rate unverifiable steps; auto-close
     low-risk, flag the rest for human review instead of dropping them (done).
-  - ✅ **SLA follow-up / escalation chasing** — remind, then auto-escalate on
+  - **SLA follow-up / escalation chasing** — remind, then auto-escalate on
     per-severity thresholds; runs on UI load and as a schedulable agent (done).
   - High-stakes actions (stop production, quarantine) stay human-gated.
