@@ -2,12 +2,20 @@
 Incident Viewer — simple Streamlit UI for incidents JSON
 
 Run:
-  streamlit run incident_viewer.py
+  streamlit run aims/ui/incident_viewer.py
 """
 
 import json
+import sys
 from pathlib import Path
+
+# `streamlit run` executes this as a loose script; add the repo root so the
+# `aims` package imports with or without `pip install -e .`. (parents[2] = root.)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import streamlit as st
+
+from aims.config import INCIDENTS_DIR
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -34,15 +42,15 @@ SEVERITY_EMOJI = {
 st.sidebar.title("AIMS")
 st.sidebar.markdown("### Load incidents file")
 
-json_files = sorted(Path(".").glob("*_incidents.json"))
-options    = [f.name for f in json_files]
+json_files = sorted(INCIDENTS_DIR.glob("*_incidents.json"))
+by_name    = {f.name: f for f in json_files}
 
-if not options:
-    st.sidebar.warning("No *_incidents.json files found in this folder.")
+if not by_name:
+    st.sidebar.warning(f"No *_incidents.json files found in {INCIDENTS_DIR}.")
     st.stop()
 
-selected = st.sidebar.selectbox("File", options)
-data     = json.loads(Path(selected).read_text())
+selected = st.sidebar.selectbox("File", list(by_name))
+data     = json.loads(by_name[selected].read_text())
 
 run_id     = data["run_id"]
 incidents  = data["incidents"]

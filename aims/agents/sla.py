@@ -6,8 +6,8 @@ the assignee, then *auto-escalates* up the chain if it's still unaddressed —
 without a human kicking it off.
 
 This module is the shared brain. It is used by:
-  • aims_ui.py            — evaluated on every page load (catch-up)
-  • sla_agent.py          — runnable standalone / on a schedule (proactive)
+  • aims.ui.app             — evaluated on every page load (catch-up)
+  • aims.agents.sla_runner  — runnable standalone / on a schedule (proactive)
 
 Design guarantees (the "bounded, auditable" part):
   • Idempotent — a reminder fires once per SLA window; no double-escalation.
@@ -16,6 +16,9 @@ Design guarantees (the "bounded, auditable" part):
   • Human-gated — escalation only nudges a ticket UP the chain. It never closes
     a ticket or stops production; those stay human decisions.
 """
+
+# Lets the `X | None` type hints below parse on Python 3.9 (PEP 604 is 3.10+).
+from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
@@ -154,7 +157,7 @@ def evaluate_slas(db: dict, now: datetime | None = None) -> list[dict]:
 def send_sla_notifications(db: dict, actions: list[dict]) -> None:
     """Best-effort email for each SLA action (gracefully skipped if unconfigured)."""
     try:
-        from notifications import notify_ticket_escalated, notify_ticket_reminder
+        from aims.agents.notifications import notify_ticket_escalated, notify_ticket_reminder
     except ImportError:
         return
 

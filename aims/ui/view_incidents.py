@@ -2,7 +2,7 @@
 view_incidents.py — pretty-print an incidents JSON file in the terminal
 
 Run:
-  python3 view_incidents.py RUN-102_incidents.json
+  python3 -m aims.ui.view_incidents data/incidents/RUN-102_incidents.json
 """
 
 import json
@@ -95,6 +95,10 @@ def print_report(path: str):
     print()
 
 
-if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else "RUN-102_incidents.json"
+def _cli() -> None:
+    path = sys.argv[1] if len(sys.argv) > 1 else "data/incidents/RUN-102_incidents.json"
     print_report(path)
+
+
+if __name__ == "__main__":
+    _cli()

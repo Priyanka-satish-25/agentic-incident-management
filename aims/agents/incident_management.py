@@ -12,7 +12,7 @@ Flow:
   5. Print incident report to terminal (highlights High/Critical)
 
 Run:
-  python3 incident_management_agent.py ../../sample_verdicts_input.json
+  python3 -m aims.agents.incident_management data/verdicts/RUN-102_verdicts.json
 """
 
 import json
@@ -24,13 +24,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
-load_dotenv()
+from aims.config import INCIDENTS_DIR, DIAGNOSES_DIR, ENV_FILE, ensure_dirs
+
+load_dotenv(ENV_FILE)
 
 # Notifications (optional — gracefully skipped if .env not configured)
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 try:
-    from notifications import notify_ticket_created
+    from aims.agents.notifications import notify_ticket_created
     _NOTIFY = True
 except ImportError:
     _NOTIFY = False
@@ -352,8 +352,9 @@ def run(verdicts_json_path: str) -> dict:
         )
 
     # Reviews are stored in the same incidents file (distinguished by verdict).
+    ensure_dirs()
     all_records = incidents + reviews
-    out_path = _save_incidents(run_id, all_records, path.parent)
+    out_path = _save_incidents(run_id, all_records, INCIDENTS_DIR)
     print(f"\n[Agent 3] Saved {len(all_records)} record(s) → {out_path.name} "
           f"({len(incidents)} incident(s), {len(reviews)} review item(s))")
 
@@ -375,9 +376,9 @@ def run(verdicts_json_path: str) -> dict:
         print("[Agent 3] No confirmed deviations — skipping root-cause analysis.")
         return result
     try:
-        from root_cause_agent import analyze_and_save
-        grouped = analyze_and_save(run_id, incidents, path.parent, quiet=True)
-        grouped_path = path.parent / f"{run_id}_grouped.json"
+        from aims.agents.root_cause import analyze_and_save
+        grouped = analyze_and_save(run_id, incidents, DIAGNOSES_DIR, quiet=True)
+        grouped_path = DIAGNOSES_DIR / f"{run_id}_grouped.json"
         result["grouped_path"] = str(grouped_path)
         print(f"[Agent 3] Root-cause diagnosis → {grouped_path.name} "
               f"({grouped['root_cause_count']} root cause(s) in {grouped['group_count']} group(s))")
@@ -387,7 +388,12 @@ def run(verdicts_json_path: str) -> dict:
     return result
 
 
-if __name__ == "__main__":
-    input_path = sys.argv[1] if len(sys.argv) > 1 else "../../sample_verdicts_input.json"
+def _cli() -> None:
+    from aims.config import VERDICTS_DIR
+    input_path = sys.argv[1] if len(sys.argv) > 1 else str(VERDICTS_DIR / "RUN-102_verdicts.json")
     result = run(input_path)
     print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    _cli()

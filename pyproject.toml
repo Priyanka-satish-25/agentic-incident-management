@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aims"
+version = "0.1.0"
+description = "AIMS — Agentic Incident Management System (Layer 3 + UI)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.30.0",
+    "python-dotenv>=1.0.0",
+    "resend>=2.0.0",
+    "streamlit>=1.30.0",
+]
+
+[project.optional-dependencies]
+# UI testing (Playwright). Install with: pip install -e ".[test]"
+test = ["playwright>=1.40.0"]
+
+[project.scripts]
+aims-incident = "aims.agents.incident_management:_cli"
+aims-root-cause = "aims.agents.root_cause:_cli"
+aims-sla = "aims.agents.sla_runner:_cli"
+aims-view = "aims.ui.view_incidents:_cli"
+
+[tool.setuptools.packages.find]
+include = ["aims*"]

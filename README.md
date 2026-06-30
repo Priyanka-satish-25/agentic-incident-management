@@ -14,14 +14,18 @@ owned by teammates).
 ## Pipeline
 
 ```
-Agent 1   →  extract SOP steps          →  *_steps_input.json
-Agent 2   →  verify worker vs. SOP       →  *_verdicts.json   (Compliant / Deviation / Unable-to-verify)
-Agent 3   →  classify deviations         →  *_incidents.json  ┐
-Root-Cause Agent → diagnose the run      →  *_grouped.json    ┘ ← THIS REPO
-UI        →  triage, comment, escalate   →  tickets_db.json
+Agent 1   →  extract SOP steps          →  data/checklists/*_steps.json
+Agent 2   →  verify worker vs. SOP       →  data/verdicts/*_verdicts.json   (Compliant / Deviation / Unable-to-verify)
+Agent 3   →  classify deviations         →  data/incidents/*_incidents.json  ┐
+Root-Cause Agent → diagnose the run      →  data/diagnoses/*_grouped.json    ┘ ← THIS REPO
+UI        →  triage, comment, escalate   →  data/tickets_db.json
 ```
 
-- **Agent 3** (`layer3/agent3/incident_management_agent.py`) reads a verdicts
+All pipeline artifacts live under `data/` (see **Project layout**). The on-disk
+locations are defined once in [`aims/config.py`](aims/config.py) — every module
+imports the directory constants from there rather than hard-coding paths.
+
+- **Agent 3** (`aims/agents/incident_management.py`) reads a verdicts
   JSON and calls an LLM per `Deviation` to produce a structured incident record
   (severity, reason, summary, recommended action). It also handles
   `Unable to Verify` verdicts (see below) instead of dropping them. Incidents are
@@ -34,7 +38,7 @@ UI        →  triage, comment, escalate   →  tickets_db.json
   | medium   | Supervisor |
   | low      | QA Log |
 
-- **Root-Cause Agent** (`root_cause_agent.py`) reasons over *all* of a run's
+- **Root-Cause Agent** (`aims/agents/root_cause.py`) reasons over *all* of a run's
   incidents together to separate independent **root causes** from their downstream
   **consequences** (e.g. a state-strip checkpoint failure that merely *reports*
   earlier component omissions). It runs automatically at the end of each Agent 3
@@ -50,24 +54,24 @@ UI        →  triage, comment, escalate   →  tickets_db.json
   evidence is missing. These records live in the same `*_incidents.json` (marked
   `verdict: "Unable to Verify"`) and are excluded from the root-cause causal tree.
 
-- **UI** (`aims_ui.py`) is a Streamlit app for role-based triage:
+- **UI** (`aims/ui/app.py`) is a Streamlit app for role-based triage:
   view tickets, comment, close, and escalate up the chain
   (QA Log → Supervisor → QA Manager → Production Manager). A **Diagnoses** tab
   renders each run's causal tree, and grouped tickets show cause/effect links in
   their detail view. A **Needs Review** tab lists unverifiable steps awaiting a
   human call — *Mark Compliant* or *Promote to Incident*.
 
-- **SLA Agent** (`sla.py` + `sla_agent.py`) chases open tickets as they age.
+- **SLA Agent** (`aims/agents/sla.py` + `aims/agents/sla_runner.py`) chases open tickets as they age.
   Per-severity thresholds (critical 30m/1h → low 36h/72h) drive a two-stage
   policy: first a **reminder** to the assignee, then **auto-escalation** up the
   chain if still unaddressed. It runs on every UI load *and* as a standalone
   agent you can schedule (cron / `/schedule`), so escalation happens even with
   nobody watching. Bounded: escalation only nudges a ticket upward (never closes
   it or stops production), every action is logged as "SLA Agent (System)", and it
-  is idempotent. `python3 sla_agent.py --fast-forward <min>` simulates elapsed
+  is idempotent. `python3 -m aims.agents.sla_runner --fast-forward <min>` simulates elapsed
   time for demos.
 
-- **Notifications** (`notifications.py`) sends email on ticket creation,
+- **Notifications** (`aims/agents/notifications.py`) sends email on ticket creation,
   escalation, and SLA reminders via the Resend API (optional — skipped gracefully
   if unconfigured).
 
@@ -89,24 +93,25 @@ omitted pulley / washer / wheel).
 
 Requires Python 3.10+.
 
-```bash
-# 1. Install Agent 3 dependencies
-pip install -r layer3/agent3/requirements.txt
+Install the project as an editable package — this pulls in all dependencies
+(`openai`, `python-dotenv`, `resend`, `streamlit`) and registers the `aims-*`
+console commands:
 
-# 2. Install the UI dependency
-pip install streamlit
+```bash
+pip install -e .
+# add the optional UI-test extra (Playwright) with:  pip install -e ".[test]"
 ```
 
 ### Configure the LLM backend
 
 Agent 3 and the Root-Cause Agent use **Azure OpenAI**.
-Copy the example env and add your Azure credentials:
+Copy the example env (at the repo root) and add your Azure credentials:
 
 ```bash
-cp layer3/agent3/.env.example layer3/agent3/.env
+cp .env.example .env
 ```
 
-Edit `layer3/agent3/.env`:
+Edit `.env`:
 
 ```ini
 AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/
@@ -129,34 +134,37 @@ AZURE_OPENAI_API_VERSION=2024-10-21       # optional; this is the default
 Run once per verdicts file. Each run writes `<run_id>_incidents.json` **and**
 automatically produces the root-cause diagnosis `<run_id>_grouped.json`:
 
+Reads from `data/verdicts/`; writes incidents to `data/incidents/` and the
+diagnosis to `data/diagnoses/`. Run everything from the **repo root**:
+
 ```bash
-cd layer3/agent3
-python3 incident_management_agent.py ../../sample_verdicts_input.json   # → RUN-102_incidents.json + RUN-102_grouped.json
-python3 incident_management_agent.py ../../RUN-103_verdicts.json        # → RUN-103_*
-python3 incident_management_agent.py ../../RUN-104_verdicts.json        # → RUN-104_*
-python3 incident_management_agent.py ../../RUN-105_verdicts.json        # → RUN-105_*
+# console script (after `pip install -e .`) …            … or the module form:
+aims-incident data/verdicts/RUN-102_verdicts.json   # python3 -m aims.agents.incident_management data/verdicts/RUN-102_verdicts.json
+aims-incident data/verdicts/RUN-103_verdicts.json   # → RUN-103_* (incidents + grouped)
+aims-incident data/verdicts/RUN-104_verdicts.json   # → RUN-104_*
+aims-incident data/verdicts/RUN-105_verdicts.json   # → RUN-105_*
 ```
 
 To (re)generate only the diagnosis for an existing incidents file:
 
 ```bash
-python3 root_cause_agent.py RUN-103_incidents.json   # → RUN-103_grouped.json (prints the causal tree)
+aims-root-cause data/incidents/RUN-103_incidents.json   # → data/diagnoses/RUN-103_grouped.json (prints the causal tree)
 ```
 
 ### 2. View incidents in the terminal (optional)
 
 ```bash
-python3 view_incidents.py RUN-103_incidents.json
+aims-view data/incidents/RUN-103_incidents.json         # or: python3 -m aims.ui.view_incidents <file>
 ```
 
 ### 3. Launch the triage UI
 
 ```bash
-streamlit run aims_ui.py
+streamlit run aims/ui/app.py
 ```
 
-Opens at `http://localhost:8501`. On first launch it scans all
-`*_incidents.json` files and builds `tickets_db.json`.
+Opens at `http://localhost:8501`. On first launch it scans
+`data/incidents/*_incidents.json` and builds `data/tickets_db.json`.
 
 **Demo credentials:**
 
@@ -167,8 +175,9 @@ Opens at `http://localhost:8501`. On first launch it scans all
 | `carol` / `carol` | Supervisor         |
 | `dave`  / `dave`  | QA Log             |
 
-> Deleting `*_incidents.json` does **not** clear the UI's store. To start clean,
-> also delete `tickets_db.json` — it rebuilds from the incident files on next launch.
+> Deleting `data/incidents/*_incidents.json` does **not** clear the UI's store. To
+> start clean, also delete `data/tickets_db.json` — it rebuilds from the incident
+> files on next launch.
 
 ### 4. Run the SLA agent (optional)
 
@@ -176,11 +185,18 @@ The UI applies SLA policy on every load, but you can also run the agent on its
 own so tickets are chased while the UI is closed:
 
 ```bash
-python3 sla_agent.py                      # evaluate against the real clock
-python3 sla_agent.py --fast-forward 300   # demo: simulate 300 min elapsed
+aims-sla                      # evaluate against the real clock
+aims-sla --fast-forward 300   # demo: simulate 300 min elapsed
+aims-sla --reset              # undo all SLA actions (re-demo from a clean slate)
+#  (module form: python3 -m aims.agents.sla_runner [--fast-forward 300 | --reset])
 ```
 
 Schedule it (e.g. every 15 min via cron or `/schedule`) for hands-off escalation.
+
+`--reset` is surgical: it clears each ticket's SLA fields, restarts the SLA clock
+from now, removes the `SLA Agent (System)` history rows, and restores the original
+status/assignee from `data/incidents/` — **keeping your comments and triage**. Use
+it to rewind after a `--fast-forward` demo.
 
 ---
 
@@ -188,21 +204,28 @@ Schedule it (e.g. every 15 min via cron or `/schedule`) for hands-off escalation
 
 ```
 agentic-incident-management/
-├── layer3/agent3/
-│   ├── incident_management_agent.py   # Agent 3 — deviation → incident classifier
-│   ├── requirements.txt
-│   └── .env                           # LLM credentials (gitignored)
-├── root_cause_agent.py                # Root-Cause Agent — per-run causal diagnosis
-├── sla.py                             # SLA policy engine (reminders + escalation)
-├── sla_agent.py                       # SLA Agent — standalone/schedulable runner
-├── aims_ui.py                         # Streamlit triage UI (incl. Diagnoses tab)
-├── notifications.py                   # Email notifications (Resend)
-├── view_incidents.py                  # Terminal incident viewer
-├── sample_verdicts_input.json         # RUN-102 verdicts (STEMFIE)
-├── RUN-10x_verdicts.json              # Agent 2 output (input to Agent 3)
-├── RUN-10x_incidents.json             # Agent 3 output (generated)
-├── RUN-10x_grouped.json               # Root-Cause Agent output (generated)
-└── tickets_db.json                    # UI state store (generated)
+├── pyproject.toml                     # deps + console scripts (aims-incident, aims-sla, …)
+├── .env.example                       # copy to .env (LLM + email creds; gitignored)
+├── aims/                              # the importable package
+│   ├── config.py                      # single source of truth for paths + .env location
+│   ├── agents/
+│   │   ├── incident_management.py     # Agent 3 — deviation → incident classifier
+│   │   ├── root_cause.py              # Root-Cause Agent — per-run causal diagnosis
+│   │   ├── sla.py                     # SLA policy engine (reminders + escalation)
+│   │   ├── sla_runner.py              # SLA Agent — standalone/schedulable runner
+│   │   └── notifications.py           # Email notifications (Resend)
+│   └── ui/
+│       ├── app.py                     # Streamlit triage UI (incl. Diagnoses tab)
+│       ├── incident_viewer.py         # Streamlit single-file incident viewer
+│       └── view_incidents.py          # Terminal incident viewer
+├── tests/
+│   └── test_ui.py                     # Playwright UI smoke test
+└── data/                              # all pipeline artifacts (keyed by run_id)
+    ├── checklists/   RUN-10x_steps.json, RUN-10x_compliance_checklist.json  # Agent 1
+    ├── verdicts/     RUN-10x_verdicts.json     # Agent 2 output  → Agent 3 input
+    ├── incidents/    RUN-10x_incidents.json    # Agent 3 output (generated)
+    ├── diagnoses/    RUN-10x_grouped.json       # Root-Cause output (generated)
+    └── tickets_db.json                          # UI state store (generated, gitignored)
 ```
 
 ---

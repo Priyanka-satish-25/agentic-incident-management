@@ -2,7 +2,7 @@
 AIMS — Role-Based Incident Management UI
 
 Run:
-  streamlit run aims_ui.py
+  streamlit run aims/ui/app.py
 
 Demo credentials:
   alice / alice  →  Production Manager
@@ -12,24 +12,32 @@ Demo credentials:
 """
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+# `streamlit run aims/ui/app.py` executes this file as a loose script, so the
+# repo root isn't on sys.path and `import aims` fails. Add it here so the app
+# runs with or without `pip install -e .`. (parents[2] = repo root.)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import streamlit as st
 
-import sla
+from aims.agents import sla
 
 try:
-    from notifications import notify_ticket_escalated, notify_ticket_created
+    from aims.agents.notifications import notify_ticket_escalated, notify_ticket_created
     _NOTIFY = True
 except ImportError:
     _NOTIFY = False
 
+from aims.config import INCIDENTS_DIR, DIAGNOSES_DIR, TICKETS_DB, ensure_dirs
+
 # ── Config ─────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="AIMS", page_icon="🛡️", layout="wide")
 
-SCRIPT_DIR = Path(__file__).parent
-DB_PATH = SCRIPT_DIR / "tickets_db.json"
+ensure_dirs()
+DB_PATH = TICKETS_DB
 
 USERS = {
     "alice": {"password": "alice", "role": "Production Manager", "name": "Alice"},
@@ -87,7 +95,7 @@ def db_key(run_id: str, ticket_id: str) -> str:
 
 def init_db_from_incidents(db: dict) -> dict:
     """Scan for *_incidents.json files and add any new tickets to the DB."""
-    for path in sorted(SCRIPT_DIR.glob("*_incidents.json")):
+    for path in sorted(INCIDENTS_DIR.glob("*_incidents.json")):
         data = json.loads(path.read_text())
         for inc in data.get("incidents", []):
             key = db_key(inc["run_id"], inc["ticket_id"])
@@ -109,7 +117,7 @@ def init_db_from_incidents(db: dict) -> dict:
 def load_groupings() -> tuple[dict, dict]:
     """Scan *_grouped.json → (per-run diagnosis dict, per-ticket role lookup keyed by db_key)."""
     by_run, ticket_meta = {}, {}
-    for path in sorted(SCRIPT_DIR.glob("*_grouped.json")):
+    for path in sorted(DIAGNOSES_DIR.glob("*_grouped.json")):
         data = json.loads(path.read_text())
         run_id = data["run_id"]
         by_run[run_id] = data
@@ -513,7 +521,7 @@ def main_app(db: dict, user: dict):
         st.caption("Each production run analyzed as a whole — independent root causes vs. their downstream consequences.")
         if not groupings:
             st.info("No diagnoses found. Generate them with: "
-                    "`python3 root_cause_agent.py <RUN>_incidents.json`")
+                    "`python3 -m aims.agents.root_cause data/incidents/<RUN>_incidents.json`")
         else:
             sel_run = st.selectbox("Run", sorted(groupings.keys()), key="diag_run")
             data = groupings[sel_run]

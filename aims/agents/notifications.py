@@ -21,11 +21,12 @@ Optional role email mappings (all default to NOTIFY_FROM if not set):
 """
 
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / ".env")
+from aims.config import ENV_FILE
+
+load_dotenv(ENV_FILE)
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 NOTIFY_FROM    = os.environ.get("NOTIFY_FROM", "onboarding@resend.dev")

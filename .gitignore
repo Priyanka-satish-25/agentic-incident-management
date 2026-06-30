@@ -8,6 +8,11 @@ __pycache__/
 *.pyo
 .Python
 *.egg-info/
+build/
+dist/
+
+# Playwright test screenshots (written to cwd)
+screenshot_*.png
 
 # Streamlit
 .streamlit/
@@ -20,3 +25,4 @@ node_modules/
 
 # Ticket database (local state, not for version control)
 tickets_db.json
+data/tickets_db.json

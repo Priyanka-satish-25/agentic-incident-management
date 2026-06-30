@@ -16,7 +16,7 @@ This is bounded, auditable autonomy:
 It does NOT modify the original incidents file. It writes <run_id>_grouped.json.
 
 Run:
-  python3 root_cause_agent.py RUN-103_incidents.json
+  python3 -m aims.agents.root_cause data/incidents/RUN-103_incidents.json
 """
 
 import json
@@ -28,8 +28,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
-# Agent 3 keeps its credentials in layer3/agent3/.env
-load_dotenv(Path(__file__).parent / "layer3" / "agent3" / ".env")
+from aims.config import INCIDENTS_DIR, DIAGNOSES_DIR, ENV_FILE
+
+load_dotenv(ENV_FILE)
 
 # ── Azure OpenAI client ──────────────────────────────────────────────────────
 client = AzureOpenAI(
@@ -217,9 +218,14 @@ def analyze_and_save(run_id: str, incidents: list[dict], output_dir, quiet: bool
 def run(incidents_path: str) -> dict:
     path = Path(incidents_path).resolve()
     data = json.loads(path.read_text())
-    return analyze_and_save(data["run_id"], data["incidents"], path.parent)
+    DIAGNOSES_DIR.mkdir(parents=True, exist_ok=True)
+    return analyze_and_save(data["run_id"], data["incidents"], DIAGNOSES_DIR)
+
+
+def _cli() -> None:
+    target = sys.argv[1] if len(sys.argv) > 1 else str(INCIDENTS_DIR / "RUN-103_incidents.json")
+    run(target)
 
 
 if __name__ == "__main__":
-    target = sys.argv[1] if len(sys.argv) > 1 else "RUN-103_incidents.json"
-    run(target)
+    _cli()
